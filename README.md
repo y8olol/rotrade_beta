@@ -112,7 +112,7 @@ RoTrade features a modern, dark-themed interface that integrates seamlessly with
 ### Building from Source
 ```bash
 # Clone the repository
-git clone https://github.com/your-repo/rotrade-extension
+git clone https://github.com/y8olol/rotrade-extension
 
 # Navigate to extension directory
 cd roblox-trading-extension
@@ -120,13 +120,6 @@ cd roblox-trading-extension
 # Load in browser as unpacked extension
 # No build process required - pure JavaScript!
 ```
-
-### Code Quality
-- ✅ **Comment-free**: Clean, production-ready code
-- ✅ **Function optimized**: No unused functions
-- ✅ **Modern JavaScript**: ES6+ features
-- ✅ **Manifest v3**: Latest extension standard
-
 ---
 
 ## 👥 Credits
@@ -145,15 +138,6 @@ cd roblox-trading-extension
 </td>
 </tr>
 </table>
-
----
-
-## 📊 Statistics
-
-- **Total Functions**: 108 optimized functions
-- **Code Coverage**: 100% function utilization
-- **File Size**: Lightweight and fast
-- **Permissions**: Minimal for maximum privacy
 
 ---
 
