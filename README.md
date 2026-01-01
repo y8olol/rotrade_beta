@@ -144,8 +144,8 @@ cd roblox-trading-extension
 ## 🔗 Links
 
 - **🌐 Official Website**: [roautotrade.com](https://roautotrade.com)
-- **📧 Support**: Contact via website
-- **🐛 Issues**: Report through extension popup
+- **📧 Support**: Contact via [discord](https://discord.gg/XHevWax8q9)
+- **🐛 Issues**: Report through [discord](https://discord.gg/XHevWax8q9)
 - **📱 Updates**: Automatic through browser
 
 ---
