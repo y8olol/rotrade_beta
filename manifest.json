@@ -1,0 +1,50 @@
+{
+  "manifest_version": 3,
+  "name": "RoTrade",
+  "version": "1.0.1",
+  "description": "Smart Roblox trading made simple. Craft your perfect trade and let our algorithm find the best trading partners automatically.",
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    },
+    "default_title": "RoTrade - Smart Trading"
+  },
+  "permissions": [
+    "activeTab"
+  ],
+  "host_permissions": [
+    "*://www.roblox.com/*",
+    "*://api.rolimons.com/*",
+    "*://roautotrade.com/*",
+    "*://users.roblox.com/*",
+    "*://inventory.roblox.com/*",
+    "*://thumbnails.roblox.com/*",
+    "*://auth.roblox.com/*",
+    "*://trades.roblox.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://www.roblox.com/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["auto-trades.html", "create-auto-trade.html", "styles.css", "bridge.js"],
+      "matches": ["*://www.roblox.com/*"]
+    }
+  ]
+}
