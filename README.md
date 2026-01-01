@@ -8,7 +8,7 @@
 
 [![Version](https://img.shields.io/badge/version-1.0.1-brightgreen)](manifest.json)
 [![Manifest](https://img.shields.io/badge/manifest-v3-blue)](manifest.json)
-[![License](https://img.shields.io/badge/license-MIT-orange)](LICENSE)
+[![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-lightgrey)](LICENSE)
 
 [🌐 Visit Website](https://roautotrade.com) • [📖 Documentation](#features) • [🐛 Report Issues](#support)
 
