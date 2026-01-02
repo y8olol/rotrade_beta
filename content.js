@@ -1551,7 +1551,7 @@
                             rap: rap,
                             serialNumber: item.serialNumber || null,
                             userAssetId: item.userAssetId || null,
-                            isOnHold: item.isOnHold || (item.name.includes('Dominus') || item.name.includes('Shaggy')),
+                            isOnHold: item.isOnHold || false,
                             copies: 1,
                             rarity: value > 50000 ? 'legendary' :
                                    value > 10000 ? 'rare' : 'common'
@@ -1907,6 +1907,10 @@
 
         const rapProfit = theirRap - yourRap;
         const valProfit = theirVal - yourVal;
+        
+        // Calculate win/loss percentages
+        const rapPercentage = yourRap > 0 ? ((theirRap - yourRap) / yourRap * 100) : 0;
+        const valPercentage = yourVal > 0 ? ((theirVal - yourVal) / yourVal * 100) : 0;
 
         let statsContainer = document.getElementById('trade-statistics');
         if (!statsContainer) {
@@ -1945,6 +1949,17 @@
                             </div>
                             <div class="profit-text ${valProfit >= 0 ? 'profit-positive' : 'profit-negative'}">
                                 ${valProfit >= 0 ? '+' : ''}${valProfit.toLocaleString()} VAL
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-section">
+                        <div class="stat-title">WIN/LOSS %</div>
+                        <div class="stat-values">
+                            <div class="profit-text ${rapPercentage >= 0 ? 'profit-positive' : 'profit-negative'}">
+                                ${rapPercentage >= 0 ? '+' : ''}${rapPercentage.toFixed(1)}% RAP
+                            </div>
+                            <div class="profit-text ${valPercentage >= 0 ? 'profit-positive' : 'profit-negative'}">
+                                ${valPercentage >= 0 ? '+' : ''}${valPercentage.toFixed(1)}% VAL
                             </div>
                         </div>
                     </div>
