@@ -144,7 +144,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     if (request.action === "fetchUserInventory") {
 
-        let url = `https://inventory.roblox.com/v1/users/${request.userId}/assets/collectibles?sortOrder=Desc&limit=100`;
+        let url = `https://inventory.roblox.com/v1/users/${request.userId}/assets/collectibles?sortOrder=Asc&limit=100`;
         if (request.cursor) {
             url += `&cursor=${request.cursor}`;
         }
