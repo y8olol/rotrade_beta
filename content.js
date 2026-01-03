@@ -200,6 +200,9 @@
         } else if (currentPath === '/auto-trades/create') {
             document.body.classList.add('path-auto-trades-create');
             loadCreateTradePage();
+        } else if (currentPath === '/auto-trades/settings') {
+            document.body.classList.add('path-auto-trades-settings');
+            loadSettingsPage();
         } else if (currentPath === '/trades' && shouldLoadSendTrades) {
 
             sessionStorage.removeItem('loadSendTrades');
@@ -223,6 +226,9 @@
                 <div class="auto-trades-header">
                     <h1 class="auto-trades-title">Auto Trades</h1>
                     <div class="control-panel">
+                        <a href="/auto-trades/settings" class="btn btn-secondary">
+                            SETTINGS
+                        </a>
                         <a href="/trades" class="btn btn-primary" id="send-trades">
                             SEND TRADES
                         </a>
@@ -427,6 +433,98 @@
         setTimeout(() => {
             checkForEditMode();
         }, 1500);
+    }
+
+    function loadSettingsPage() {
+        const settings = getSettings();
+
+        const content = `
+            <div class="auto-trades-container">
+                <a href="/auto-trades" class="back-link">← Back to Auto Trades</a>
+
+                <div class="auto-trades-header">
+                    <h1 class="auto-trades-title">Settings</h1>
+                </div>
+
+                <div class="settings-sections">
+                    <div class="settings-section">
+                        <h3>Common Owners Fetching</h3>
+                        <p class="section-description">Adjust parameters for finding users who own the items you want to trade for.</p>
+
+                        <div class="setting-group">
+                            <label class="setting-label">Max Owner Days</label>
+                            <input type="number" id="maxOwnerDays" class="setting-input" value="${settings.maxOwnerDays}" min="1" max="999999999" />
+                            <small class="setting-help">Maximum days since user owned the items (current: ${settings.maxOwnerDays.toLocaleString()})</small>
+                        </div>
+
+                        <div class="setting-group">
+                            <label class="setting-label">Last Online Days</label>
+                            <input type="number" id="lastOnlineDays" class="setting-input" value="${settings.lastOnlineDays}" min="1" max="365" />
+                            <small class="setting-help">Maximum days since user was last online (current: ${settings.lastOnlineDays})</small>
+                        </div>
+
+                        <div class="setting-actions">
+                            <button class="btn btn-secondary" id="save-settings">Save Settings</button>
+                            <button class="btn btn-opposite" id="reset-settings">Reset to Defaults</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        replacePageContent(content);
+        setupSettingsEventListeners();
+    }
+
+    function getSettings() {
+        const defaults = {
+            maxOwnerDays: 100000000,
+            lastOnlineDays: 3
+        };
+        return { ...defaults, ...JSON.parse(localStorage.getItem('rotradeSettings') || '{}') };
+    }
+
+    function saveSettings(settings) {
+        localStorage.setItem('rotradeSettings', JSON.stringify(settings));
+    }
+
+    function setupSettingsEventListeners() {
+        const saveBtn = document.getElementById('save-settings');
+        const resetBtn = document.getElementById('reset-settings');
+
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => {
+                const maxOwnerDays = parseInt(document.getElementById('maxOwnerDays').value) || 100000000;
+                const lastOnlineDays = parseInt(document.getElementById('lastOnlineDays').value) || 3;
+
+                if (maxOwnerDays < 1 || maxOwnerDays > 999999999) {
+                    alert('Max Owner Days must be between 1 and 999,999,999');
+                    return;
+                }
+
+                if (lastOnlineDays < 1 || lastOnlineDays > 365) {
+                    alert('Last Online Days must be between 1 and 365');
+                    return;
+                }
+
+                const settings = { maxOwnerDays, lastOnlineDays };
+                saveSettings(settings);
+
+                saveBtn.textContent = 'Settings Saved!';
+                setTimeout(() => {
+                    saveBtn.textContent = 'Save Settings';
+                }, 2000);
+            });
+        }
+
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                if (confirm('Reset settings to default values?')) {
+                    document.getElementById('maxOwnerDays').value = 100000000;
+                    document.getElementById('lastOnlineDays').value = 3;
+                }
+            });
+        }
     }
 
     function replacePageContent(newContent) {
@@ -1907,8 +2005,7 @@
 
         const rapProfit = theirRap - yourRap;
         const valProfit = theirVal - yourVal;
-        
-        // Calculate win/loss percentages
+
         const rapPercentage = yourRap > 0 ? ((theirRap - yourRap) / yourRap * 100) : 0;
         const valPercentage = yourVal > 0 ? ((theirVal - yourVal) / yourVal * 100) : 0;
 
@@ -2752,6 +2849,12 @@
                     <!-- Filter chips will be generated here -->
                 </div>
                 <div class="shuffle-controls">
+                    <div class="user-stats-toggle">
+                        <label class="stats-toggle-label">
+                            <input type="checkbox" id="user-stats-toggle">
+                            <span class="toggle-text">Show User Stats</span>
+                        </label>
+                    </div>
                     <div class="total-users-info" id="total-users-info">
                         Total Users: 0
                     </div>
@@ -2866,6 +2969,11 @@
                 window.location.href = '/auto-trades';
             });
         }
+
+        const userStatsToggle = document.getElementById('user-stats-toggle');
+        if (userStatsToggle) {
+            userStatsToggle.addEventListener('change', toggleUserStatsVisibility);
+        }
     }
 
     async function loadTradeOpportunities() {
@@ -2953,11 +3061,12 @@
                     continue;
                 }
 
+                const settings = getSettings();
                 const ownersResponse = await chrome.runtime.sendMessage({
                     action: 'fetchCommonOwners',
                     itemIds: itemIds,
-                    maxOwnerDays: 100000000,
-                    lastOnlineDays: 3
+                    maxOwnerDays: settings.maxOwnerDays,
+                    lastOnlineDays: settings.lastOnlineDays
                 });
 
                 if (ownersResponse.success && ownersResponse.data.owners) {
@@ -3307,7 +3416,9 @@
                             <div class="trade-title-compact">${opportunity.name}</div>
                             <div class="trade-target">→ ${opportunity.targetUser.username}</div>
                         </div>
-                        <img src="${opportunity.targetUser.avatarUrl}" alt="${opportunity.targetUser.username}" class="user-avatar-compact" style="opacity: 0.7;" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAiIGhlaWdodD0iMzAiIHZpZXdCb3g9IjAgMCAzMCAzMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMwIiBoZWlnaHQ9IjMwIiByeD0iNCIgZmlsbD0iIzMzMzMzMyIvPgo8Y2lyY2xlIGN4PSIxNSIgY3k9IjEyIiByPSI0IiBmaWxsPSIjNjY2NjY2Ii8+CjxwYXRoIGQ9Ik04IDI0QzggMjAuNjg2MyAxMS4xMzQgMTggMTUgMThDMTguODY2IDE4IDIyIDIwLjY4NjMgMjIgMjRIOFoiIGZpbGw9IiM2NjY2NjYiLz4KPC9zdmc+Cg=='" />
+                        <div class="header-right-section">
+                            <img src="${opportunity.targetUser.avatarUrl}" alt="${opportunity.targetUser.username}" class="user-avatar-compact" style="opacity: 0.7;" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAiIGhlaWdodD0iMzAiIHZpZXdCb3g9IjAgMCAzMCAzMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMwIiBoZWlnaHQ9IjMwIiByeD0iNCIgZmlsbD0iIzMzMzMzMyIvPgo8Y2lyY2xlIGN4PSIxNSIgY3k9IjEyIiByPSI0IiBmaWxsPSIjNjY2NjY2Ii8+CjxwYXRoIGQ9Ik04IDI0QzggMjAuNjg2MyAxMS4xMzQgMTggMTUgMThDMTguODY2IDE4IDIyIDIwLjY4NjMgMjIgMjRIOFoiIGZpbGw9IiM2NjY2NjYiLz4KPC9zdmc+Cg=='" />
+                        </div>
                     </div>
 
                     <div class="trade-content-compact">
@@ -3340,6 +3451,8 @@
 
         setTimeout(() => {
             loadAutoTradeItemThumbnails('send-trades-grid');
+            loadUserStatsForTradeCards();
+
         }, 100);
 
         setupSendTradeButtons();
@@ -3378,6 +3491,7 @@
 
                 setTimeout(() => {
                     loadUserAvatars();
+
                 }, 100);
             }
         });
@@ -3537,6 +3651,7 @@
 
         setTimeout(() => {
             loadUserAvatars();
+
         }, 100);
 
     }
@@ -4528,6 +4643,468 @@
         }
 
         applyResponsiveItemSizing();
+    }
+
+    async function getUserRapAndValue(userId) {
+        try {
+
+            let rolimonData = {};
+            try {
+                const response = await chrome.runtime.sendMessage({
+                    action: 'fetchRolimons'
+                });
+                if (response.success) {
+                    rolimonData = response.data.items || {};
+                }
+            } catch (error) {
+                console.warn('Failed to fetch Rolimons data:', error);
+            }
+
+            let totalRap = 0;
+            let totalValue = 0;
+            let limitedCount = 0;
+            let cursor = null;
+            let pageCount = 0;
+
+            do {
+                pageCount++;
+
+                const response = await new Promise((resolve) => {
+                    chrome.runtime.sendMessage({
+                        action: "fetchUserInventory",
+                        userId: userId,
+                        cursor: cursor
+                    }, (response) => {
+                        resolve(response);
+                    });
+                });
+
+                if (!response || !response.success) {
+                    break;
+                }
+
+                const data = response.data;
+
+                if (data.data && data.data.length > 0) {
+                    data.data.forEach(item => {
+                        if (item.recentAveragePrice > 0) {
+
+                            let rolimonItem = Object.values(rolimonData).find(r => r[0] === item.name);
+
+                            if (!rolimonItem && item.assetId) {
+                                rolimonItem = rolimonData[item.assetId.toString()];
+                            }
+
+                            let rap, value;
+
+                            if (rolimonItem && (rolimonItem[2] > 0 || rolimonItem[4] > 0)) {
+
+                                rap = rolimonItem[2] || 0;
+                                value = rolimonItem[4] || 0;
+                            } else {
+
+                                rap = item.recentAveragePrice;
+                                value = item.recentAveragePrice;
+                            }
+
+                            totalRap += rap;
+                            totalValue += value;
+                            limitedCount++;
+                        }
+                    });
+                }
+
+                cursor = data.nextPageCursor;
+
+                if (cursor) {
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+
+            } while (cursor);
+
+            const result = {
+                totalRap,
+                totalValue,
+                limitedCount,
+                isPartial: false
+            };
+
+            if (totalRap === 0 && totalValue === 0) {
+
+                await new Promise(resolve => setTimeout(resolve, 500));
+                const retryResult = await retryUserInventory(userId, rolimonData);
+
+                if (retryResult && (retryResult.totalRap > 0 || retryResult.totalValue > 0)) {
+
+                    const finalResult = retryResult;
+                    return finalResult;
+                }
+            }
+
+            return result;
+
+        } catch (error) {
+            console.error('Error fetching user RAP & Value:', error);
+            return {
+                totalRap: 0,
+                totalValue: 0,
+                limitedCount: 0,
+                isPartial: false,
+                error: true
+            };
+        }
+    }
+
+    async function retryUserInventory(userId, rolimonData) {
+        try {
+            let totalRap = 0;
+            let totalValue = 0;
+            let limitedCount = 0;
+            let cursor = null;
+
+            do {
+                const response = await new Promise((resolve) => {
+                    chrome.runtime.sendMessage({
+                        action: "fetchUserInventory",
+                        userId: userId,
+                        cursor: cursor
+                    }, (response) => {
+                        resolve(response);
+                    });
+                });
+
+                if (!response || !response.success) {
+                    break;
+                }
+
+                const data = response.data;
+
+                if (data.data && data.data.length > 0) {
+                    data.data.forEach(item => {
+                        if (item.recentAveragePrice > 0) {
+
+                            let rolimonItem = Object.values(rolimonData).find(r => r[0] === item.name);
+
+                            if (!rolimonItem && item.assetId) {
+                                rolimonItem = rolimonData[item.assetId.toString()];
+                            }
+
+                            let rap, value;
+
+                            if (rolimonItem && (rolimonItem[2] > 0 || rolimonItem[4] > 0)) {
+
+                                rap = rolimonItem[2] || 0;
+                                value = rolimonItem[4] || 0;
+                            } else {
+
+                                rap = item.recentAveragePrice;
+                                value = item.recentAveragePrice;
+                            }
+
+                            totalRap += rap;
+                            totalValue += value;
+                            limitedCount++;
+                        }
+                    });
+                }
+
+                cursor = data.nextPageCursor;
+
+                if (cursor) {
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
+
+            } while (cursor);
+
+            return {
+                totalRap,
+                totalValue,
+                limitedCount,
+                isPartial: false
+            };
+
+        } catch (error) {
+            console.error(`Retry failed for user ${userId}:`, error);
+            return null;
+        }
+    }
+
+    if (!window.globalUserStats) window.globalUserStats = new Map();
+    if (!window.userStatsLoadingInProgress) window.userStatsLoadingInProgress = false;
+    if (!window.allUsersToLoad) window.allUsersToLoad = new Set();
+
+    function startBackgroundUserStatsLoading() {
+        const userStatsToggle = document.getElementById('user-stats-toggle');
+        if (!userStatsToggle || !userStatsToggle.checked) {
+
+            loadUserStatsInBackground();
+            return;
+        }
+
+        if (window.userStatsLoadingInProgress) {
+            return;
+        }
+
+        window.userStatsLoadingInProgress = true;
+
+        collectAllUsersToLoad();
+
+        loadUsersInBackground();
+    }
+
+    function collectAllUsersToLoad() {
+
+        window.allUsersToLoad.clear();
+
+        if (window.currentOpportunities) {
+            window.currentOpportunities.forEach(opportunity => {
+                if (opportunity.targetUserId) {
+                    window.allUsersToLoad.add(opportunity.targetUserId);
+                } else if (opportunity.targetUser && opportunity.targetUser.id) {
+                    window.allUsersToLoad.add(opportunity.targetUser.id);
+                }
+            });
+        }
+
+        const tradeCards = document.querySelectorAll('.send-trade-card');
+        tradeCards.forEach(card => {
+            const sendBtn = card.querySelector('.send-trade-btn');
+            if (sendBtn) {
+                const userId = parseInt(sendBtn.getAttribute('data-user-id'));
+                if (userId && !isNaN(userId)) {
+                    window.allUsersToLoad.add(userId);
+                }
+            }
+        });
+    }
+
+    async function loadUsersInBackground() {
+        const usersArray = Array.from(window.allUsersToLoad);
+        const shuffledUsers = usersArray.sort(() => Math.random() - 0.5);
+
+        for (const userId of shuffledUsers) {
+            try {
+
+                if (window.globalUserStats.has(userId)) {
+                    continue;
+                }
+
+                const randomDelay = 100 + Math.random() * 400;
+                await new Promise(resolve => setTimeout(resolve, randomDelay));
+
+                const userStats = await getUserRapAndValue(userId);
+
+                if (userStats && !userStats.error) {
+
+                    window.globalUserStats.set(userId, userStats);
+
+                    updateUserStatsDisplayIfVisible(userId, userStats);
+                }
+
+            } catch (error) {
+                console.error(`Failed to load stats for user ${userId}:`, error);
+            }
+        }
+
+        window.userStatsLoadingInProgress = false;
+    }
+
+    function displayCachedUserStatsForCurrentTab() {
+        const tradeCards = document.querySelectorAll('.send-trade-card');
+
+        tradeCards.forEach(card => {
+            const sendBtn = card.querySelector('.send-trade-btn');
+            if (sendBtn) {
+                const userId = parseInt(sendBtn.getAttribute('data-user-id'));
+                const cachedStats = window.globalUserStats.get(userId);
+
+                if (cachedStats) {
+                    addUserStatsToCard(card, cachedStats);
+                }
+            }
+        });
+    }
+
+    function updateUserStatsDisplayIfVisible(userId, stats) {
+
+        const userCards = document.querySelectorAll(`[data-user-id="${userId}"]`);
+
+        userCards.forEach(card => {
+            const tradeCard = card.closest('.send-trade-card');
+            if (tradeCard) {
+                addUserStatsToCard(tradeCard, stats);
+            }
+        });
+    }
+
+    async function loadUserStatsForTradeCards() {
+
+        if (loadUserStatsForTradeCards.isRunning) {
+            return;
+        }
+        loadUserStatsForTradeCards.isRunning = true;
+
+        try {
+            const userStatsToggle = document.getElementById('user-stats-toggle');
+
+        if (!userStatsToggle || !userStatsToggle.checked) {
+            loadUserStatsInBackground();
+            return;
+        }
+
+        const tradeCards = document.querySelectorAll('.send-trade-card');
+        const userIds = [...new Set(Array.from(tradeCards).map(card => {
+            const sendBtn = card.querySelector('.send-trade-btn');
+            return sendBtn ? parseInt(sendBtn.getAttribute('data-user-id')) : null;
+        }).filter(Boolean))];
+
+        const shuffledUserIds = userIds.sort(() => Math.random() - 0.5);
+
+        for (const userId of shuffledUserIds) {
+            try {
+
+                const randomDelay = 100 + Math.random() * 400;
+                await new Promise(resolve => setTimeout(resolve, randomDelay));
+
+                const userStats = await getUserRapAndValue(userId);
+
+                const userCards = document.querySelectorAll(`[data-user-id="${userId}"]`);
+                userCards.forEach(card => {
+                    const tradeCard = card.closest('.send-trade-card');
+                    if (tradeCard) {
+                        addUserStatsToCard(tradeCard, userStats);
+                    }
+                });
+
+            } catch (error) {
+                console.error(`Failed to load stats for user ${userId}:`, error);
+            }
+        }
+        } finally {
+            loadUserStatsForTradeCards.isRunning = false;
+        }
+    }
+
+    async function loadUserStatsInBackground() {
+
+        if (loadUserStatsInBackground.isRunning) {
+            return;
+        }
+        loadUserStatsInBackground.isRunning = true;
+
+        try {
+            const tradeCards = document.querySelectorAll('.send-trade-card');
+            const userIds = [...new Set(Array.from(tradeCards).map(card => {
+                const sendBtn = card.querySelector('.send-trade-btn');
+                return sendBtn ? parseInt(sendBtn.getAttribute('data-user-id')) : null;
+            }).filter(Boolean))];
+
+            for (const userId of userIds) {
+                try {
+                    const randomDelay = 100 + Math.random() * 400;
+                    await new Promise(resolve => setTimeout(resolve, randomDelay));
+
+                    await getUserRapAndValue(userId);
+                } catch (error) {
+                    console.error(`Background stats loading failed for user ${userId}:`, error);
+                }
+            }
+        } finally {
+            loadUserStatsInBackground.isRunning = false;
+        }
+    }
+
+    function addUserStatsToCard(tradeCard, userStats) {
+
+        const existingStats = tradeCard.querySelector('.user-stats-info');
+        if (existingStats) {
+            existingStats.remove();
+        }
+
+        const userStatsToggle = document.getElementById('user-stats-toggle');
+        const headerRightSection = tradeCard.querySelector('.header-right-section');
+
+        if (!userStatsToggle || !userStatsToggle.checked) {
+
+            if (headerRightSection) {
+                headerRightSection.classList.remove('stats-enabled');
+            }
+            return;
+        }
+
+        if (headerRightSection) {
+            headerRightSection.classList.add('stats-enabled');
+        }
+
+        const statsElement = document.createElement('div');
+        statsElement.className = 'user-stats-info';
+
+        let rapText = userStats.totalRap.toLocaleString();
+        let valueText = userStats.totalValue.toLocaleString();
+
+        if (userStats.error) {
+            rapText = 'Error';
+            valueText = 'Error';
+        }
+
+        statsElement.innerHTML = `
+            <div class="user-stats-row">
+                <span class="stats-label">RAP:</span>
+                <span class="stats-value rap-text">${rapText}</span>
+            </div>
+            <div class="user-stats-row">
+                <span class="stats-label">VAL:</span>
+                <span class="stats-value val-text">${valueText}</span>
+            </div>
+            ${userStats.limitedCount > 0 ? `<div class="limited-count">${userStats.limitedCount} limiteds</div>` : ''}
+        `;
+
+        const avatar = tradeCard.querySelector('.user-avatar-compact');
+
+        if (headerRightSection && avatar) {
+            headerRightSection.appendChild(statsElement);
+        } else {
+
+            const tradeHeader = tradeCard.querySelector('.send-trade-header');
+            if (tradeHeader) {
+                tradeHeader.appendChild(statsElement);
+            }
+        }
+    }
+
+    function toggleUserStatsVisibility() {
+        const userStatsToggle = document.getElementById('user-stats-toggle');
+        const allStatsElements = document.querySelectorAll('.user-stats-info');
+        const allHeaderRightSections = document.querySelectorAll('.header-right-section');
+
+        if (userStatsToggle && userStatsToggle.checked) {
+            // Show warning about experimental feature
+            alert('⚠️ User stats are loading. This may take a minute as it\'s an experimental feature.');
+        }
+
+        if (userStatsToggle && userStatsToggle.checked) {
+
+            allStatsElements.forEach(stats => {
+                stats.style.display = 'flex';
+            });
+
+            allHeaderRightSections.forEach(section => {
+                section.classList.add('stats-enabled');
+            });
+
+            setTimeout(() => {
+                loadUserStatsForTradeCards();
+            }, 100);
+        } else {
+
+            allStatsElements.forEach(stats => {
+                stats.style.display = 'none';
+            });
+
+            allHeaderRightSections.forEach(section => {
+                section.classList.remove('stats-enabled');
+            });
+        }
     }
 
     if (window.location.pathname.includes('/auto-trades') ||
