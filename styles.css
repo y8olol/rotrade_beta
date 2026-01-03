@@ -1229,6 +1229,27 @@ body.path-auto-trades-create .request-error-page-content {
     margin-bottom: 10px;
 }
 
+.trade-info-compact {
+    flex: 1; /* Take available space */
+    margin-right: auto; /* Push everything else to the right */
+}
+
+.header-right-section {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* More spacing between elements */
+}
+
+/* When stats are enabled - avatar on left, stats on right */
+.header-right-section.stats-enabled {
+    flex-direction: row; /* avatar first, then stats */
+}
+
+/* When stats are disabled - avatar on right (default) */
+.header-right-section:not(.stats-enabled) {
+    flex-direction: row-reverse; /* avatar stays on right */
+}
+
 .trade-title-compact {
     font-size: 14px;
     font-weight: 600;
@@ -1253,8 +1274,8 @@ body.path-auto-trades-create .request-error-page-content {
 }
 
 .user-avatar-compact {
-    width: 30px;
-    height: 30px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     border: 1px solid var(--auto-trades-border);
     transition: opacity 0.3s ease;
@@ -1641,7 +1662,80 @@ body.path-auto-trades-create .request-error-page-content {
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-/* 🎯 CLICKABLE TRADE SUMMARY ITEMS */
+/* User Stats Toggle */
+.user-stats-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 15px;
+}
+
+.stats-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--auto-trades-text-primary);
+    cursor: pointer;
+    margin: 0;
+}
+
+.stats-toggle-label input[type="checkbox"] {
+    accent-color: var(--auto-trades-text-primary);
+    transform: scale(0.9);
+}
+
+.toggle-text {
+    font-weight: 500;
+    user-select: none;
+}
+
+/* User Stats Display on Cards */
+.user-stats-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px 8px;
+    background: var(--auto-trades-bg-primary);
+    border: 1px solid var(--auto-trades-border);
+    border-radius: 4px;
+    min-width: 70px;
+}
+
+.user-stats-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+}
+
+.stats-label {
+    color: var(--auto-trades-text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stats-value {
+    font-weight: 700;
+    font-family: "Source Sans Pro", "Lucida Grande", "Lucida Sans Unicode", Arial, sans-serif;
+}
+
+.stats-value.rap-text {
+    color: #28a745 !important; /* Green for RAP */
+}
+
+.stats-value.val-text {
+    color: #007bff !important; /* Blue for VALUE */
+}
+
+.limited-count {
+    font-size: 9px;
+    color: var(--auto-trades-text-muted);
+    text-align: center;
+    margin-top: 2px;
+    font-style: italic;
+}
 .clickable-summary,
 .clickable-inventory-summary {
     cursor: pointer;
@@ -1657,4 +1751,98 @@ body.path-auto-trades-create .request-error-page-content {
 .clickable-summary:active,
 .clickable-inventory-summary:active {
     transform: scale(0.95);
+}
+
+/* ===== SETTINGS PAGE STYLES ===== */
+.auto-trades-injected .settings-sections {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.auto-trades-injected .settings-section {
+    background: var(--auto-trades-bg-secondary);
+    border: 1px solid var(--auto-trades-border);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.auto-trades-injected .settings-section h3 {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+    color: var(--auto-trades-text-primary);
+    font-weight: 600;
+}
+
+.auto-trades-injected .section-description {
+    margin: 0 0 20px 0;
+    color: var(--auto-trades-text-secondary);
+    font-size: 14px;
+}
+
+.auto-trades-injected .settings-section .setting-group {
+    margin-bottom: 20px;
+}
+
+.auto-trades-injected .settings-section .setting-label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: var(--auto-trades-text-primary);
+    font-size: 14px;
+}
+
+.auto-trades-injected .settings-section .setting-input {
+    width: 200px;
+    padding: 8px 12px;
+    border: 1px solid var(--auto-trades-border);
+    border-radius: 4px;
+    background: var(--auto-trades-bg-primary);
+    color: var(--auto-trades-text-primary);
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.auto-trades-injected .settings-section .setting-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.auto-trades-injected .settings-section .setting-help {
+    display: block;
+    margin-top: 4px;
+    color: var(--auto-trades-text-muted);
+    font-size: 12px;
+}
+
+.auto-trades-injected .setting-actions {
+    margin-top: 24px;
+    display: flex;
+    gap: 12px;
+}
+
+.auto-trades-injected .btn.btn-secondary {
+    background: var(--auto-trades-bg-primary);
+    color: var(--auto-trades-text-secondary);
+    border: 1px solid var(--auto-trades-border);
+}
+
+.auto-trades-injected .btn.btn-secondary:hover {
+    background: var(--auto-trades-border);
+    color: var(--auto-trades-text-primary);
+}
+
+/* Opposite theme button - inverts the secondary button colors */
+.auto-trades-injected .btn.btn-opposite {
+    background: var(--auto-trades-text-secondary);
+    color: var(--auto-trades-bg-primary);
+    border: 1px solid var(--auto-trades-text-secondary);
+    transition: all 0.2s ease;
+}
+
+.auto-trades-injected .btn.btn-opposite:hover {
+    background: var(--auto-trades-text-primary);
+    color: var(--auto-trades-bg-primary);
+    border-color: var(--auto-trades-text-primary);
 }
