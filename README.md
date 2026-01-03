@@ -6,7 +6,7 @@
 
 **Smart Roblox trading made simple. Craft your perfect trade and let our algorithm find the best trading partners automatically.**
 
-[![Version](https://img.shields.io/badge/version-1.0.2-brightgreen)](manifest.json)
+[![Version](https://img.shields.io/badge/version-1.0.3-brightgreen)](manifest.json)
 [![Manifest](https://img.shields.io/badge/manifest-v3-blue)](manifest.json)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-lightgrey)](LICENSE)
 
@@ -105,22 +105,6 @@ RoTrade features a modern, dark-themed interface that integrates seamlessly with
 - **Consistent Branding**: Professional green accent colors
 - **Accessibility**: Clear typography and intuitive navigation
 
----
-
-## 🔧 Development
-
-### Building from Source
-```bash
-# Clone the repository
-git clone https://github.com/y8olol/rotrade-extension
-
-# Navigate to extension directory
-cd roblox-trading-extension
-
-# Load in browser as unpacked extension
-# No build process required - pure JavaScript!
-```
----
 
 ## 👥 Credits
 
