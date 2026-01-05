@@ -1,4 +1,29 @@
+let rolimonsCache = {
+    data: null,
+    timestamp: 0,
+    promise: null,
+    duration: 60000
+};
 
+let commonOwnersCache = {
+    map: new Map(), 
+    duration: 60000
+};
+
+let thumbnailCache = {
+    map: new Map(),
+    duration: 300000
+};
+
+let inventoryCache = {
+    map: new Map(),
+    duration: 60000
+};
+
+let playerAssetsCache = {
+    map: new Map(),
+    duration: 60000
+};
 
 chrome.action.onClicked.addListener((tab) => {
     chrome.tabs.create({
@@ -7,8 +32,93 @@ chrome.action.onClicked.addListener((tab) => {
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === "checkCanTradeWith") {
+    if (request.action === "fetchPlayerAssets") {
+        const userIds = Array.isArray(request.userIds) ? request.userIds : [];
+        const now = Date.now();
 
+        if (userIds.length === 0) {
+            sendResponse({ success: false, error: "No user IDs provided" });
+            return true;
+        }
+
+        const cachedResults = {};
+        const uncachedUserIds = [];
+
+        for (let i = 0; i < userIds.length; i++) {
+            const userId = userIds[i];
+            const cached = playerAssetsCache.map.get(userId);
+            if (cached && (now - cached.timestamp < playerAssetsCache.duration)) {
+                cachedResults[userId] = cached.data;
+            } else {
+                uncachedUserIds.push(userId);
+            }
+        }
+
+        if (uncachedUserIds.length === 0) {
+            sendResponse({ success: true, data: { results: cachedResults, failedUsers: [] } });
+            return true;
+        }
+
+        const results = {};
+        const failedUsers = [];
+        const BATCH_SIZE = 9;
+        
+        async function processUsersInBatches() {
+            for (let i = 0; i < uncachedUserIds.length; i += BATCH_SIZE) {
+                const batch = uncachedUserIds.slice(i, i + BATCH_SIZE);
+                
+                const batchPromises = batch.map(async (userId) => {
+                    try {
+                        const response = await fetch(`https://roautotrade.com/api/playerassets/${userId}`);
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        const data = await response.json();
+                        
+                        if (data && data.success && Array.isArray(data.playerAssets)) {
+                            playerAssetsCache.map.set(userId, {
+                                data: data.playerAssets,
+                                timestamp: Date.now()
+                            });
+                            return { userId, success: true, data: data.playerAssets };
+                        } else {
+                            return { userId, success: false, reason: 'No assets or privacy enabled' };
+                        }
+                    } catch (error) {
+                        return { userId, success: false, reason: error.message };
+                    }
+                });
+
+                const batchResults = await Promise.all(batchPromises);
+                
+                batchResults.forEach(result => {
+                    if (result.success) {
+                        results[result.userId] = result.data;
+                    } else {
+                        failedUsers.push({ userId: result.userId, reason: result.reason });
+                    }
+                });
+
+                if (i + BATCH_SIZE < uncachedUserIds.length) {
+                    await Utils.delay(1000);
+                }
+            }
+        }
+
+        processUsersInBatches()
+            .then(() => {
+                const finalResults = { ...cachedResults, ...results };
+                const finalResult = { results: finalResults, failedUsers };
+                sendResponse({ success: true, data: finalResult });
+            })
+            .catch(error => {
+                console.error('Background: Error in player assets fetch:', error);
+                sendResponse({ success: false, error: error.message });
+            });
+
+        return true;
+    }
+    else if (request.action === "checkCanTradeWith") {
         fetch('https://auth.roblox.com/v1/logout', {
             method: 'POST',
             credentials: 'include'
@@ -31,7 +141,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             });
         })
         .then(response => {
-
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -46,32 +155,67 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
 
         return true;
-    }
+    } else if (request.action === "fetchRolimons") {
+        const cacheEntry = rolimonsCache;
+        const now = Date.now();
 
-    if (request.action === "fetchRolimons") {
+        if (cacheEntry.data && (now - cacheEntry.timestamp < cacheEntry.duration)) {
+            sendResponse({ success: true, data: cacheEntry.data });
+            return true;
+        }
 
-        fetch("https://api.rolimons.com/items/v2/itemdetails")
-            .then(response => {
+        if (cacheEntry.promise) {
+            cacheEntry.promise.then(data => {
+                sendResponse({ success: true, data: data });
+            }).catch(error => {
+                sendResponse({ success: false, error: error.message });
+            });
+            return true;
+        }
+
+        cacheEntry.promise = (async () => {
+            try {
+                const response = await fetch("https://api.rolimons.com/items/v2/itemdetails");
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                return response.json();
-            })
-            .then(data => {
-                sendResponse({ success: true, data: data });
-            })
-            .catch(error => {
+                const data = await response.json();
+                
+                if (!data || typeof data !== 'object' || !data.items) {
+                    throw new Error('Invalid Rolimons data format');
+                }
+                
+                cacheEntry.data = data;
+                cacheEntry.timestamp = Date.now();
+                cacheEntry.promise = null;
+                return data;
+            } catch (error) {
+                cacheEntry.promise = null;
                 console.error('Background: Error fetching Rolimons data:', error);
-                sendResponse({ success: false, error: error.message });
-            });
+                throw error;
+            }
+        })();
+
+        cacheEntry.promise.then(data => {
+            sendResponse({ success: true, data: data });
+        }).catch(error => {
+            console.error('Background: Error fetching Rolimons data:', error);
+            sendResponse({ success: false, error: error.message || 'Failed to fetch Rolimons data' });
+        });
 
         return true;
-    }
-
-    if (request.action === "fetchCommonOwners") {
-
+    } else if (request.action === "fetchCommonOwners") {
         const { itemIds, maxOwnerDays = 100000000, lastOnlineDays = 3 } = request;
-        const url = `https://roautotrade.com/api/common-owners?item_ids=${itemIds.join(',')}&max_owner_days=${maxOwnerDays}&last_online_days=${lastOnlineDays}`;
+        const cacheKey = JSON.stringify({ itemIds, maxOwnerDays, lastOnlineDays });
+        const now = Date.now();
+
+        const cached = commonOwnersCache.map.get(cacheKey);
+        if (cached && (now - cached.timestamp < commonOwnersCache.duration)) {
+            sendResponse({ success: true, data: cached.data });
+            return true;
+        }
+
+        const url = `https://roautotrade.com/api/common-owners?item_ids=${itemIds.join(',')}&max_owner_days=${maxOwnerDays}&last_online_days=${lastOnlineDays}&detailed=true`;
 
         fetch(url)
             .then(response => {
@@ -81,6 +225,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 return response.json();
             })
             .then(data => {
+                commonOwnersCache.map.set(cacheKey, {
+                    data: data,
+                    timestamp: Date.now()
+                });
                 sendResponse({ success: true, data: data });
             })
             .catch(error => {
@@ -89,10 +237,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             });
 
         return true;
-    }
-
-    if (request.action === "fetchInstanceIds") {
-
+    } else if (request.action === "fetchInstanceIds") {
         fetch("https://roautotrade.com/api/instance-ids", {
             method: 'POST',
             headers: {
@@ -101,9 +246,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             body: JSON.stringify(request.payload)
         })
             .then(response => {
-
                 if (!response.ok) {
-
                     return response.text().then(text => {
                         console.error('Background: API Error response:', text);
                         throw new Error(`HTTP error! status: ${response.status}, response: ${text}`);
@@ -120,29 +263,42 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             });
 
         return true;
-    }
-
-    if (request.action === "fetchUserAuth") {
-
-        fetch("https://users.roblox.com/v1/users/authenticated")
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                sendResponse({ success: true, data: data });
-            })
-            .catch(error => {
-                console.error('Background: Error fetching user auth:', error);
-                sendResponse({ success: false, error: error.message });
+    } else if (request.action === "fetchUserAuth") {
+        (async () => {
+            const result = await Utils.safeFetch("https://users.roblox.com/v1/users/authenticated", {
+                timeout: 8000,
+                retries: 2
             });
 
-        return true;
-    }
+            if (result.ok) {
+                const validated = Utils.validateData(result.data, {
+                    id: { type: 'number', required: true },
+                    name: { type: 'string', required: false, default: '' },
+                    displayName: { type: 'string', required: false, default: '' }
+                });
 
-    if (request.action === "fetchUserInventory") {
+                if (validated.valid) {
+                    sendResponse({ success: true, data: validated.data });
+                } else {
+                    Utils.Logger.log('fetch_user_auth_validation_failed', { errors: validated.errors });
+                    sendResponse({ success: false, error: 'Invalid user data format' });
+                }
+            } else {
+                Utils.Logger.log('fetch_user_auth_failed', { error: result.error?.message });
+                sendResponse({ success: false, error: result.error?.message || 'Failed to fetch user auth' });
+            }
+        })();
+
+        return true;
+    } else if (request.action === "fetchUserInventory") {
+        const cacheKey = `${request.userId}_${request.cursor || ''}`;
+        const now = Date.now();
+        
+        const cached = inventoryCache.map.get(cacheKey);
+        if (cached && (now - cached.timestamp < inventoryCache.duration)) {
+            sendResponse({ success: true, data: cached.data });
+            return true;
+        }
 
         let url = `https://inventory.roblox.com/v1/users/${request.userId}/assets/collectibles?sortOrder=Asc&limit=100`;
         if (request.cursor) {
@@ -157,23 +313,29 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 return response.json();
             })
             .then(data => {
+                inventoryCache.map.set(cacheKey, {
+                    data: data,
+                    timestamp: Date.now()
+                });
                 sendResponse({ success: true, data: data });
             })
             .catch(error => {
                 console.error('Background: Error fetching user collectibles:', error);
-                console.error('Background: Error details:', {
-                    message: error.message,
-                    stack: error.stack
-                });
                 sendResponse({ success: false, error: error.message });
             });
 
         return true;
-    }
+    } else if (request.action === "fetchThumbnail") {
+        const itemId = request.itemId;
+        const now = Date.now();
+        
+        const cached = thumbnailCache.map.get(itemId);
+        if (cached && (now - cached.timestamp < thumbnailCache.duration)) {
+            sendResponse({ success: true, data: cached.data });
+            return true;
+        }
 
-    if (request.action === "fetchThumbnail") {
-
-        fetch(`https://thumbnails.roblox.com/v1/assets?assetIds=${request.itemId}&size=150x150&format=Png&isCircular=false`)
+        fetch(`https://thumbnails.roblox.com/v1/assets?assetIds=${itemId}&size=150x150&format=Png&isCircular=false`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -181,6 +343,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 return response.json();
             })
             .then(data => {
+                thumbnailCache.map.set(itemId, {
+                    data: data,
+                    timestamp: Date.now()
+                });
                 sendResponse({ success: true, data: data });
             })
             .catch(error => {
@@ -191,4 +357,3 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     }
 });
-

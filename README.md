@@ -112,7 +112,7 @@ RoTrade features a modern, dark-themed interface that integrates seamlessly with
 <tr>
 <td align="center">
 <strong>Frontend Developer</strong><br>
-<code>y8o</code><br>
+<code>y8o, xolo</code><br>
 <em>Extension Development</em>
 </td>
 <td align="center">
@@ -146,6 +146,6 @@ This project is licensed under the Creative Commons Attribution-NonCommercial 4.
 
 **Made with ❤️ for the Roblox trading community**
 
-*RoTrade v1.0.2 - Smart Roblox Trading Made Simple*
+*RoTrade v1.1.3 - Smart Roblox Trading Made Simple*
 
 </div>
