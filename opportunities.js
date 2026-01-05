@@ -275,11 +275,42 @@
         const activeFilter = document.querySelector('.trade-filter-chip.active');
         const tradeName = activeFilter ? activeFilter.dataset.tradeName : 'all';
 
+        // Handle "all trades" shuffle - just shuffle all current opportunities
         if (tradeName === 'all') {
-            Dialogs.alert('Shuffle Unavailable', 'Shuffle is only available on specific trade tabs. Please select a specific trade to shuffle users for that trade.', 'info');
+            if (!window.currentOpportunities || window.currentOpportunities.length === 0) {
+                Dialogs.alert('No Opportunities', 'No trading opportunities available to shuffle.', 'info');
+                return;
+            }
+
+            // Shuffle all opportunities
+            function shuffleArray(array) {
+                const shuffled = [...array];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                return shuffled;
+            }
+
+            const shuffled = shuffleArray([...window.currentOpportunities]);
+            window.currentOpportunities = shuffled;
+            // Since "all trades" is active, filteredOpportunities should show all opportunities
+            window.filteredOpportunities = [...shuffled];
+
+            Pagination.setCurrentPage(1);
+            Pagination.displayCurrentPage();
+            updateTradeFilterBar();
+            updateTotalUsersInfo();
+            Pagination.updatePaginationControls();
+            
+            Utils.delay(50).then(() => {
+                loadUserAvatars();
+            });
+
             return;
         }
 
+        // Handle specific trade shuffle
         const activeTradeId = activeFilter ? activeFilter.dataset.tradeId : null;
         const autoTrades = Storage.get('autoTrades', []);
         const currentTrade = autoTrades.find(t => t.id == activeTradeId);

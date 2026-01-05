@@ -75,12 +75,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         }
                         const data = await response.json();
                         
-                        if (data && data.success && Array.isArray(data.playerAssets)) {
+                        if (data && data.success && data.playerAssets) {
+                            // playerAssets can be either an object (new format) or array (old format)
+                            const playerAssets = data.playerAssets;
                             playerAssetsCache.map.set(userId, {
-                                data: data.playerAssets,
+                                data: playerAssets,
                                 timestamp: Date.now()
                             });
-                            return { userId, success: true, data: data.playerAssets };
+                            return { userId, success: true, data: playerAssets };
                         } else {
                             return { userId, success: false, reason: 'No assets or privacy enabled' };
                         }
@@ -100,7 +102,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 });
 
                 if (i + BATCH_SIZE < uncachedUserIds.length) {
-                    await Utils.delay(1000);
+                    await Utils.delay(500); // Reduced delay for faster loading
                 }
             }
         }

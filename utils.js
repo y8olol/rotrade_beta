@@ -209,18 +209,10 @@
         return throttled;
     }
 
-    function nextMicrotask(callback) {
-        return Promise.resolve().then(() => callback());
-    }
-
     function nextFrame(callback) {
         if (typeof requestAnimationFrame !== 'undefined') {
             return requestAnimationFrame(callback);
         }
-        return setTimeout(callback, 0);
-    }
-
-    function nextMacrotask(callback) {
         return setTimeout(callback, 0);
     }
 
@@ -475,9 +467,7 @@
     const Utils = {
         debounce,
         throttle,
-        nextMicrotask,
         nextFrame,
-        nextMacrotask,
         delay,
         Logger,
         withRetry,

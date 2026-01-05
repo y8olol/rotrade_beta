@@ -25,13 +25,17 @@
 
     async function getUserRapAndValue() {
         try {
-            let rolimonData = {};
-            try {
-                const response = await chrome.runtime.sendMessage({ action: 'fetchRolimons' });
-                if (response && response.success) {
-                    rolimonData = response.data.items || {};
+            // Get rolimonData from cache if available, otherwise fetch
+            let rolimonData = window.rolimonData || {};
+            if (Object.keys(rolimonData).length === 0) {
+                try {
+                    const response = await chrome.runtime.sendMessage({ action: 'fetchRolimons' });
+                    if (response && response.success) {
+                        rolimonData = response.data.items || {};
+                        window.rolimonData = rolimonData; // Cache it
+                    }
+                } catch (error) {
                 }
-            } catch (error) {
             }
 
             const currentOpportunities = window.filteredOpportunities || [];
@@ -63,15 +67,70 @@
 
             let response;
             try {
-                response = await chrome.runtime.sendMessage({
-                    action: "fetchPlayerAssets",
-                    userIds: usersToProcess
+                // Wrap in timeout to prevent indefinite waiting (30 seconds)
+                const messagePromise = new Promise((resolve, reject) => {
+                    chrome.runtime.sendMessage({
+                        action: "fetchPlayerAssets",
+                        userIds: usersToProcess
+                    }, (response) => {
+                        if (chrome.runtime.lastError) {
+                            reject(new Error(chrome.runtime.lastError.message));
+                        } else {
+                            resolve(response);
+                        }
+                    });
                 });
+
+                const timeoutResult = await Utils.withTimeout(messagePromise, 30000);
+                if (!timeoutResult.ok) {
+                    throw new Error(timeoutResult.error?.message || 'Request timeout or failed');
+                }
+                response = timeoutResult.data;
             } catch (error) {
+                // Clear loading state on error
+                const errorStats = {
+                    totalRap: 0,
+                    totalValue: 0,
+                    limitedCount: 0,
+                    error: true,
+                    isLoading: false
+                };
+                usersToProcess.forEach(userId => {
+                    window.globalUserStats.set(userId, errorStats);
+                    updateSpecificUserCard(userId, errorStats);
+                });
                 return window.globalUserStats;
             }
 
             if (!response || !response.success) {
+                // Clear loading state when response fails
+                const errorStats = {
+                    totalRap: 0,
+                    totalValue: 0,
+                    limitedCount: 0,
+                    error: true,
+                    isLoading: false
+                };
+                usersToProcess.forEach(userId => {
+                    window.globalUserStats.set(userId, errorStats);
+                    updateSpecificUserCard(userId, errorStats);
+                });
+                return window.globalUserStats;
+            }
+
+            // Ensure response.data exists
+            if (!response.data) {
+                const errorStats = {
+                    totalRap: 0,
+                    totalValue: 0,
+                    limitedCount: 0,
+                    error: true,
+                    isLoading: false
+                };
+                usersToProcess.forEach(userId => {
+                    window.globalUserStats.set(userId, errorStats);
+                    updateSpecificUserCard(userId, errorStats);
+                });
                 return window.globalUserStats;
             }
 
@@ -80,17 +139,38 @@
             const failedUserIds = failedUsers.map(f => f.userId);
 
             const successIds = [];
-            for (const userId of usersToProcess) {
+            const processedUserIds = new Set();
+            
+            // Process all users in parallel for faster updates
+            const processPromises = usersToProcess.map(async (userId) => {
                 const userAssets = allUserData[userId];
                 
                 if (userAssets) {
                     const stats = calculateUserStatsFromAssets(userAssets, rolimonData);
                     
                     window.globalUserStats.set(userId, stats);
-                    
                     updateSpecificUserCard(userId, stats);
                     
                     successIds.push(userId);
+                    processedUserIds.add(userId);
+                }
+            });
+            
+            await Promise.all(processPromises);
+
+            // Clear loading state for users that weren't in the response and aren't in failedUsers
+            for (const userId of usersToProcess) {
+                if (!processedUserIds.has(userId) && !failedUserIds.includes(userId)) {
+                    // User data missing from response - mark as error
+                    const errorStats = {
+                        totalRap: 0,
+                        totalValue: 0,
+                        limitedCount: 0,
+                        error: true,
+                        isLoading: false
+                    };
+                    window.globalUserStats.set(userId, errorStats);
+                    updateSpecificUserCard(userId, errorStats);
                 }
             }
 
@@ -98,10 +178,18 @@
                 await Utils.delay(2000);
 
                 for (let i = 0; i < failedUserIds.length; i++) {
-                    window.globalUserStats.delete(failedUserIds[i]);
+                    const userId = failedUserIds[i];
+                    // Mark failed users with error state instead of deleting
+                    const errorStats = {
+                        totalRap: 0,
+                        totalValue: 0,
+                        limitedCount: 0,
+                        error: true,
+                        isLoading: false
+                    };
+                    window.globalUserStats.set(userId, errorStats);
+                    updateSpecificUserCard(userId, errorStats);
                 }
-                
-                await getUserRapAndValue(failedUserIds);
             }
             
             updateUserCardsDisplay(userIds); 
@@ -128,7 +216,8 @@
                 
                 const count = instanceIds.length;
                 
-                const rolimonItem = rolimonData[assetId.toString()];
+                // Try both string and number keys for assetId
+                const rolimonItem = rolimonData[assetId.toString()] || rolimonData[Number(assetId)] || rolimonData[assetId];
                 if (rolimonItem && Array.isArray(rolimonItem) && rolimonItem.length >= 5) {
                     const rap = Number(rolimonItem[2]) || 0;
                     const value = Number(rolimonItem[4]) || 0;

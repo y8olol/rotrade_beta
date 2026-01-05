@@ -47,14 +47,6 @@
         }
     }
 
-    function getBatch(keys) {
-        const results = {};
-        for (let i = 0; i < keys.length; i++) {
-            results[keys[i]] = get(keys[i], null);
-        }
-        return results;
-    }
-
     function flushWrites() {
         if (writeQueue.size === 0) {
             writeTimer = null;
@@ -105,5 +97,5 @@
         }
     }
 
-    window.Storage = { get, set, getBatch, setBatch, remove, clear, flush: flushWrites, clearCache };
+    window.Storage = { get, set, setBatch, remove, clear, flush: flushWrites, clearCache };
 })();

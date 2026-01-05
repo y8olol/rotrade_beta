@@ -49,15 +49,9 @@
         return el;
     }
 
-    function createFragment(html) {
-        const template = document.createElement('template');
-        template.innerHTML = html;
-        return template.content;
-    }
-
     function clearCache() {
         elementCache.clear();
     }
 
-    window.DOM = { $, $$, createElement, createFragment, clearCache };
+    window.DOM = { $, $$, createElement, clearCache };
 })();
