@@ -80,7 +80,6 @@ The extension popup provides quick access to:
 
 ### Files Structure
 ```
-roblox-trading-extension/
 ├── manifest.json          # Extension configuration
 ├── popup.html             # Extension popup interface
 ├── popup.js               # Popup functionality
@@ -88,10 +87,33 @@ roblox-trading-extension/
 ├── content.js             # Main trading logic
 ├── background.js          # Background service worker
 ├── bridge.js              # Angular integration
+├── bridge-utils.js        # Bridge utility functions
 ├── styles.css             # Injected styles
 ├── icon.png               # Extension icon
+├── notification.mp3       # Notification sound
 ├── auto-trades.html       # Auto-trades dashboard
-└── create-auto-trade.html # Trade creation interface
+├── create-auto-trade.html # Trade creation interface
+├── utils.js               # Utility functions
+├── storage.js             # Local storage management
+├── dom.js                 # DOM manipulation utilities
+├── thumbnails.js          # Thumbnail handling
+├── api.js                 # API communication
+├── routing.js             # Page routing
+├── trades.js              # Trade management
+├── ui.js                  # UI components
+├── pagination.js          # Pagination logic
+├── inventory.js           # Inventory management
+├── trade-display.js       # Trade display logic
+├── trade-operations.js    # Trade operations
+├── trade-summary.js       # Trade summary
+├── user-stats.js          # User statistics
+├── pages.js               # Page management
+├── event-listeners.js     # Event handling
+├── trade-loading.js       # Trade loading states
+├── opportunities.js       # Trade opportunities
+├── trade-sending.js       # Trade sending logic
+├── trade-status.js        # Trade status tracking
+└── dialogs.js             # Dialog management
 ```
 
 ---
