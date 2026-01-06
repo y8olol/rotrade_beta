@@ -161,9 +161,9 @@ body:not(.dark-theme) .extension-dialog p {
 /* Match Roblox's page headers exactly - ONLY in our pages */
 .auto-trades-injected .auto-trades-header {
     margin-bottom: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
     flex-wrap: wrap;
     gap: 15px;
 }
@@ -178,10 +178,11 @@ body:not(.dark-theme) .extension-dialog p {
 
 /* Use Roblox's exact button styling - ONLY in our pages */
 .auto-trades-injected .control-panel {
-    display: flex;
+    display: flex !important;
     gap: 10px;
     align-items: center;
     flex-wrap: wrap;
+    justify-content: flex-end !important; /* Ensure buttons stay on the right */
 }
 
 .auto-trades-injected .btn {
@@ -291,13 +292,13 @@ body:not(.dark-theme) .extension-dialog p {
     background: none;
 }
 
-/* Auto trade cards styling */
+/* Auto trade cards styling - Consistent 3x3 grid system */
 .auto-trades-injected .auto-trades-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    margin: 0 auto;
-    max-width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important; /* Consistent 3-column layout */
+    gap: 16px !important;
+    margin: 0 auto !important;
+    max-width: 100% !important;
 }
 
 .auto-trades-injected .auto-trade-card {
@@ -441,13 +442,21 @@ body:not(.dark-theme) .extension-dialog p {
     border-color: var(--auto-trades-text-muted);
 }
 
-/* Trades grid for outbound/expired sections */
+/* Trades grid for outbound/expired sections - Consistent 3x3 grid system - MAXIMUM SPECIFICITY */
+body:not(.path-auto-trades-send) #outbound-container,
+body:not(.path-auto-trades-send) #expired-container,
+body:not(.path-auto-trades-send) #countered-container,
+body:not(.path-auto-trades-send) #completed-container,
+#outbound-container,
+#expired-container,
+#countered-container,
+#completed-container,
 .auto-trades-injected .trades-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    margin: 0 auto;
-    max-width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important; /* Consistent 3-column layout */
+    gap: 16px !important;
+    margin: 0 auto !important;
+    max-width: 100% !important;
 }
 
 .auto-trades-injected .trade-card {
@@ -923,8 +932,8 @@ body:not(.dark-theme) .extension-dialog p {
 }
 
 .auto-trades-injected .trade-builder {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important; /* Force side-by-side layout */
     gap: 20px;
     margin-top: 20px;
 }
@@ -1284,35 +1293,28 @@ body.path-auto-trades-create .request-error-page-content {
 }
 
 /* Responsive adjustments - ONLY in our pages */
-@media (max-width: 1400px) {
-    .auto-trades-injected .auto-trades-grid,
-    .auto-trades-injected .trades-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
+/* Keep consistent 3x3 grid and side-by-side layout for desktop */
 
-@media (max-width: 1400px) {
-    .auto-trades-injected .auto-trades-grid,
-    .auto-trades-injected .trades-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width: 1200px) {
+@media (max-width: 480px) {
     .auto-trades-injected .auto-trades-container,
     .auto-trades-injected .create-trade-container {
-        margin-left: 160px;
+        margin-left: 0; /* Remove margin for mobile */
+        padding: 10px;
     }
     
-    .auto-trades-injected .auto-trades-grid,
-    .auto-trades-injected .trades-grid {
-        grid-template-columns: repeat(2, 1fr);
+    .auto-trades-injected .trade-builder {
+        grid-template-columns: 1fr; /* Single column layout ONLY for very small mobile */
+    }
+    
+    .auto-trades-injected .auto-trades-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .auto-trades-injected .control-panel {
+        justify-content: center;
     }
 }
-
-@media (max-width: 768px) {
-    .auto-trades-injected .auto-trades-container,
-    .auto-trades-injected .create-trade-container {
         margin-left: 0;
         padding: 10px;
     }
@@ -1438,11 +1440,11 @@ body.path-auto-trades-create .request-error-page-content {
 }
 
 .send-trades-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin: 0 auto;
-    max-width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 16px !important;
+    margin: 0 auto !important;
+    max-width: 100% !important;
 }
 
 /* Compact send trade cards */
