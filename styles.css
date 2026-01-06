@@ -146,14 +146,14 @@ body:not(.dark-theme) .extension-dialog p {
 /* Container with proper spacing for Roblox sidebar - ONLY in our pages */
 .auto-trades-injected .auto-trades-container {
     padding: 20px;
-    margin-left: 15px; /* Account for Roblox sidebar */
+    margin-left: 10px; /* Account for Roblox sidebar */
     margin-top: 20px;
     background: inherit;
 }
 
 .auto-trades-injected .create-trade-container {
     padding: 20px;
-    margin-left: 15px; /* Account for Roblox sidebar */
+    margin-left: 10px; /* Account for Roblox sidebar */
     margin-top: 20px;
     background: inherit;
 }
