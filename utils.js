@@ -209,18 +209,10 @@
         return throttled;
     }
 
-    function nextMicrotask(callback) {
-        return Promise.resolve().then(() => callback());
-    }
-
     function nextFrame(callback) {
         if (typeof requestAnimationFrame !== 'undefined') {
             return requestAnimationFrame(callback);
         }
-        return setTimeout(callback, 0);
-    }
-
-    function nextMacrotask(callback) {
         return setTimeout(callback, 0);
     }
 
@@ -357,7 +349,8 @@
                 retryable: (error) => {
                     if (error.name === 'AbortError') return false;
                     const message = error.message || '';
-                    return message.includes('429') || message.includes('timeout') || message.includes('network');
+                    if (message.includes('429')) return false;
+                    return message.includes('timeout') || message.includes('network');
                 },
                 signal
             }
@@ -368,6 +361,27 @@
 
     function validateData(data, schema) {
         if (!schema) return { valid: true, data };
+        
+        // Check if data is null or undefined
+        if (data === null || data === undefined) {
+            const requiredFields = Object.entries(schema)
+                .filter(([_, validator]) => validator.required)
+                .map(([key]) => key);
+            return { 
+                valid: false, 
+                errors: requiredFields.map(key => `Missing required field: ${key}`),
+                data: null 
+            };
+        }
+        
+        // Check if data is an object (not array, not primitive)
+        if (typeof data !== 'object' || Array.isArray(data)) {
+            return { 
+                valid: false, 
+                errors: ['Data must be an object'],
+                data: null 
+            };
+        }
         
         const errors = [];
         const validated = {};
@@ -475,9 +489,7 @@
     const Utils = {
         debounce,
         throttle,
-        nextMicrotask,
         nextFrame,
-        nextMacrotask,
         delay,
         Logger,
         withRetry,
@@ -492,6 +504,11 @@
 
     if (typeof window !== 'undefined') {
         window.Utils = Utils;
+    }
+
+    // Service worker context (self is the global object in service workers)
+    if (typeof self !== 'undefined' && typeof window === 'undefined') {
+        self.Utils = Utils;
     }
 
     if (typeof module !== 'undefined' && module.exports) {

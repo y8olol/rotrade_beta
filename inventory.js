@@ -52,6 +52,10 @@
         const grid = document.getElementById('inventory-grid');
         if (!grid) return;
 
+        if (grid._inventoryClickHandler) {
+            grid.removeEventListener('click', grid._inventoryClickHandler);
+        }
+
         grid.innerHTML = items.map((item, index) => `
             <div class="item-card ${item.isOnHold ? 'on-hold' : ''}" data-item="${item.name}" data-value="${item.value}" data-rap="${item.rap}" data-id="${item.id}" data-index="${index}" data-type="inventory" data-on-hold="${item.isOnHold || false}">
                 <div class="item-image">
@@ -68,7 +72,8 @@
             </div>
         `).join('');
 
-        grid.addEventListener('click', function(e) {
+        // Create and store the click handler
+        grid._inventoryClickHandler = function(e) {
             const itemCard = e.target.closest('.item-card');
             if (itemCard && itemCard.dataset.type === 'inventory') {
                 if (itemCard.dataset.onHold === 'true') {
@@ -91,11 +96,17 @@
                     itemCard.style.setProperty('--quantity-number', '"1"');
                 }
 
-                if (window.updateTradeSummaryGlobal) {
+                if (window.updateTradeSummaryGlobalImmediate) {
+                    window.updateTradeSummaryGlobalImmediate();
+                } else if (window.updateTradeSummaryGlobal) {
                     window.updateTradeSummaryGlobal();
+                } else if (window.TradeSummary && window.TradeSummary.updateTradeSummaryInternal) {
+                    window.TradeSummary.updateTradeSummaryInternal();
                 }
             }
-        });
+        };
+
+        grid.addEventListener('click', grid._inventoryClickHandler);
 
         loadActualThumbnails('inventory-grid', items);
     }
@@ -103,6 +114,11 @@
     function displayCatalog(items) {
         const grid = document.getElementById('catalog-grid');
         if (!grid) return;
+
+        // Remove existing click handler if it exists
+        if (grid._catalogClickHandler) {
+            grid.removeEventListener('click', grid._catalogClickHandler);
+        }
 
         grid.innerHTML = items.map((item, index) => `
             <div class="item-card" data-item="${item.name}" data-value="${item.value}" data-rap="${item.rap}" data-id="${item.id}" data-index="${index}" data-type="catalog" data-quantity="0">
@@ -119,13 +135,15 @@
             </div>
         `).join('');
 
-        grid.addEventListener('click', function(e) {
+        // Create and store the click handler
+        grid._catalogClickHandler = function(e) {
             const itemCard = e.target.closest('.item-card');
             if (itemCard && itemCard.dataset.type === 'catalog') {
-                const currentQuantity = parseInt(itemCard.dataset.quantity) || 0;
+                const currentQuantity = parseInt(itemCard.getAttribute('data-quantity')) || 0;
                 const nextQuantity = (currentQuantity + 1) % 5;
 
-                itemCard.dataset.quantity = nextQuantity;
+                itemCard.setAttribute('data-quantity', nextQuantity.toString());
+                itemCard.dataset.quantity = nextQuantity.toString();
 
                 if (nextQuantity === 0) {
                     itemCard.classList.remove('selected');
@@ -135,17 +153,26 @@
                     itemCard.style.setProperty('--quantity-number', `"${nextQuantity}"`);
                 }
 
-                if (window.updateTradeSummaryGlobal) {
+                if (window.updateTradeSummaryGlobalImmediate) {
+                    window.updateTradeSummaryGlobalImmediate();
+                } else if (window.updateTradeSummaryGlobal) {
                     window.updateTradeSummaryGlobal();
+                } else if (window.TradeSummary && window.TradeSummary.updateTradeSummaryInternal) {
+                    window.TradeSummary.updateTradeSummaryInternal();
+                } else if (window.TradeSummary && window.TradeSummary.updateTradeSummary) {
+                    window.TradeSummary.updateTradeSummary();
                 }
             }
-        });
+        };
+
+        grid.addEventListener('click', grid._catalogClickHandler);
 
         loadActualThumbnails('catalog-grid', items);
     }
 
     function updateCatalogVisual(catalogItem, newQuantity) {
-        catalogItem.dataset.quantity = newQuantity;
+        catalogItem.setAttribute('data-quantity', newQuantity.toString());
+        catalogItem.dataset.quantity = newQuantity.toString();
 
         if (newQuantity === 0) {
             catalogItem.classList.remove('selected');

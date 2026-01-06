@@ -1,3 +1,5 @@
+importScripts('utils.js');
+
 let rolimonsCache = {
     data: null,
     timestamp: 0,
@@ -75,12 +77,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         }
                         const data = await response.json();
                         
-                        if (data && data.success && Array.isArray(data.playerAssets)) {
+                        if (data && data.success && data.playerAssets) {
+                            const playerAssets = data.playerAssets;
                             playerAssetsCache.map.set(userId, {
-                                data: data.playerAssets,
+                                data: playerAssets,
                                 timestamp: Date.now()
                             });
-                            return { userId, success: true, data: data.playerAssets };
+                            return { userId, success: true, data: playerAssets };
                         } else {
                             return { userId, success: false, reason: 'No assets or privacy enabled' };
                         }
@@ -100,7 +103,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 });
 
                 if (i + BATCH_SIZE < uncachedUserIds.length) {
-                    await Utils.delay(1000);
+                    await Utils.delay(500);
                 }
             }
         }
@@ -271,16 +274,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             });
 
             if (result.ok) {
-                const validated = Utils.validateData(result.data, {
-                    id: { type: 'number', required: true },
-                    name: { type: 'string', required: false, default: '' },
-                    displayName: { type: 'string', required: false, default: '' }
-                });
+                const userData = result.data?.data || result.data;
+                
+                if (!userData || typeof userData !== 'object' || Array.isArray(userData)) {
+                    Utils.Logger.log('fetch_user_auth_validation_failed', { 
+                        errors: ['userData is not a valid object'], 
+                        resultData: result.data,
+                        userData: userData,
+                        userDataType: typeof userData,
+                        isArray: Array.isArray(userData)
+                    });
+                    sendResponse({ success: false, error: 'Invalid user data format: data is not an object' });
+                    return;
+                }
 
+                const validated = Utils.validateData(userData, {
+                    id: { type: 'number', required: true},
+                    name: { type: 'string', required: true, },
+                    displayName: { type: 'string', required: true}
+                });
+                
                 if (validated.valid) {
                     sendResponse({ success: true, data: validated.data });
                 } else {
-                    Utils.Logger.log('fetch_user_auth_validation_failed', { errors: validated.errors });
+                    Utils.Logger.log('fetch_user_auth_validation_failed', { 
+                        errors: validated.errors,
+                        receivedData: userData
+                    });
                     sendResponse({ success: false, error: 'Invalid user data format' });
                 }
             } else {

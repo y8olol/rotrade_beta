@@ -1,19 +1,27 @@
 (function() {
     'use strict';
 
-    const updateTradeSummary = Utils.debounce(function() {
-        const givingContainer = DOM.$('#giving-items');
-        const receivingContainer = DOM.$('#receiving-items');
+    function updateTradeSummaryInternal() {
+        const givingContainer = document.getElementById('giving-items');
+        const receivingContainer = document.getElementById('receiving-items');
 
         if (!givingContainer || !receivingContainer) {
             return;
         }
 
         const selectedInventory = document.querySelectorAll('#inventory-grid .item-card.selected');
-        const selectedCatalog = document.querySelectorAll('#catalog-grid .item-card[data-quantity]:not([data-quantity="0"])');
+        const allCatalogItems = document.querySelectorAll('#catalog-grid .item-card');
+        const selectedCatalog = Array.from(allCatalogItems).filter(item => {
+            const quantityAttr = item.getAttribute('data-quantity');
+            const quantityDataset = item.dataset.quantity;
+            const quantity = parseInt(quantityAttr) || parseInt(quantityDataset) || 0;
+            return quantity > 0;
+        });
 
         const totalCatalogItems = Array.from(selectedCatalog).reduce((total, item) => {
-            return total + (parseInt(item.dataset.quantity) || 0);
+            const quantityAttr = item.getAttribute('data-quantity');
+            const quantityDataset = item.dataset.quantity;
+            return total + (parseInt(quantityAttr) || parseInt(quantityDataset) || 0);
         }, 0);
 
         let yourTotalRap = 0;
@@ -63,7 +71,9 @@
                 const itemName = item.dataset.item;
                 const itemValue = parseInt(item.dataset.value);
                 const itemRap = parseInt(item.dataset.rap);
-                const quantity = parseInt(item.dataset.quantity) || 1;
+                const quantityAttr = item.getAttribute('data-quantity');
+                const quantityDataset = item.dataset.quantity;
+                const quantity = parseInt(quantityAttr) || parseInt(quantityDataset) || 1;
 
                 theirTotalVal += itemValue * quantity;
                 theirTotalRap += itemRap * quantity;
@@ -115,7 +125,9 @@
         }
 
         updateTradeStatistics(yourTotalRap, yourTotalVal, theirTotalRap, theirTotalVal);
-    }, 100);
+    }
+
+    const updateTradeSummary = Utils.debounce(updateTradeSummaryInternal, 100);
 
     function updateTradeStatistics(yourRap, yourVal, theirRap, theirVal) {
         const rapProfit = theirRap - yourRap;
@@ -184,9 +196,11 @@
     }
 
     window.updateTradeSummaryGlobal = updateTradeSummary;
+    window.updateTradeSummaryGlobalImmediate = updateTradeSummaryInternal;
 
     window.TradeSummary = {
         updateTradeSummary,
+        updateTradeSummaryInternal,
         updateTradeStatistics
     };
 })();

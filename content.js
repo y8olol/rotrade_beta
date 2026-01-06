@@ -152,6 +152,9 @@
 
     const updateTradeSummary = TradeSummary.updateTradeSummary;
     window.updateTradeSummaryGlobal = updateTradeSummary;
+    if (window.TradeSummary && window.TradeSummary.updateTradeSummaryInternal) {
+        window.updateTradeSummaryGlobalImmediate = window.TradeSummary.updateTradeSummaryInternal;
+    }
 
 
     document.addEventListener('click', function(e) {
@@ -163,13 +166,23 @@
 
             const catalogItem = document.querySelector(`#catalog-grid .item-card[data-id="${itemId}"]`);
             if (catalogItem) {
-                const currentQuantity = parseInt(catalogItem.dataset.quantity) || 0;
+                const currentQuantityAttr = catalogItem.getAttribute('data-quantity');
+                const currentQuantityDataset = catalogItem.dataset.quantity;
+                const currentQuantity = parseInt(currentQuantityAttr) || parseInt(currentQuantityDataset) || 0;
                 if (currentQuantity > 0) {
 
                     const newQuantity = currentQuantity - 1;
 
                     updateCatalogVisual(catalogItem, newQuantity);
-                    updateTradeSummary();
+                    if (window.updateTradeSummaryGlobalImmediate) {
+                        window.updateTradeSummaryGlobalImmediate();
+                    } else if (window.updateTradeSummaryGlobal) {
+                        window.updateTradeSummaryGlobal();
+                    } else if (window.TradeSummary && window.TradeSummary.updateTradeSummaryInternal) {
+                        window.TradeSummary.updateTradeSummaryInternal();
+                    } else if (updateTradeSummary) {
+                        updateTradeSummary();
+                    }
 
                 }
             }
@@ -186,7 +199,15 @@
 
                 inventoryItem.classList.remove('selected');
                 inventoryItem.style.removeProperty('--quantity-number');
-                updateTradeSummary();
+                if (window.updateTradeSummaryGlobalImmediate) {
+                    window.updateTradeSummaryGlobalImmediate();
+                } else if (window.updateTradeSummaryGlobal) {
+                    window.updateTradeSummaryGlobal();
+                } else if (window.TradeSummary && window.TradeSummary.updateTradeSummaryInternal) {
+                    window.TradeSummary.updateTradeSummaryInternal();
+                } else if (updateTradeSummary) {
+                    updateTradeSummary();
+                }
 
             }
         }
