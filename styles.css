@@ -294,7 +294,7 @@ body:not(.dark-theme) .extension-dialog p {
 /* Auto trade cards styling */
 .auto-trades-injected .auto-trades-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
     margin: 0 auto;
     max-width: 100%;
@@ -444,7 +444,7 @@ body:not(.dark-theme) .extension-dialog p {
 /* Trades grid for outbound/expired sections */
 .auto-trades-injected .trades-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
     margin: 0 auto;
     max-width: 100%;
