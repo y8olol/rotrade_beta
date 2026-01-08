@@ -169,6 +169,6 @@ This project is licensed under the Creative Commons Attribution-NonCommercial 4.
 
 **Made with ❤️ for the Roblox trading community**
 
-*RoTrade v1.1.3 - Smart Roblox Trading Made Simple*
+*RoTrade v1.1.5 - Smart Roblox Trading Made Simple*
 
 </div>

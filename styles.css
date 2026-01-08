@@ -146,16 +146,24 @@ body:not(.dark-theme) .extension-dialog p {
 /* Container with proper spacing for Roblox sidebar - ONLY in our pages */
 .auto-trades-injected .auto-trades-container {
     padding: 20px;
-    margin-left: 0px; /* Account for Roblox sidebar */
+    margin-left: 180px; /* Account for Roblox sidebar when visible */
     margin-top: 20px;
     background: inherit;
+    transition: margin-left 0.3s ease;
 }
 
 .auto-trades-injected .create-trade-container {
     padding: 20px;
-    margin-left: 0px; /* Account for Roblox sidebar */
+    margin-left: 180px; /* Account for Roblox sidebar when visible */
     margin-top: 20px;
     background: inherit;
+    transition: margin-left 0.3s ease;
+}
+
+/* When sidebar is collapsed (hamburger menu) */
+.auto-trades-injected .auto-trades-container.sidebar-collapsed,
+.auto-trades-injected .create-trade-container.sidebar-collapsed {
+    margin-left: 0px;
 }
 
 /* Match Roblox's page headers exactly - ONLY in our pages */
@@ -1299,8 +1307,8 @@ body.path-auto-trades-create .request-error-page-content {
 }
 
 @media (max-width: 1200px) {
-    .auto-trades-injected .auto-trades-container,
-    .auto-trades-injected .create-trade-container {
+    .auto-trades-injected .auto-trades-container:not(.sidebar-collapsed),
+    .auto-trades-injected .create-trade-container:not(.sidebar-collapsed) {
         margin-left: 160px;
     }
     
@@ -1352,9 +1360,13 @@ body.path-auto-trades-create .request-error-page-content {
     color: white !important;
     margin-bottom: 6px; /* Space between stacked buttons */
     width: 80px; /* Fixed width for both buttons */
+    min-width: 32px !important;
+    min-height: 32px !important;
     outline: none !important; /* Remove blue focus outline */
     border: none !important;
     box-shadow: none !important;
+    flex-shrink: 0 !important;
+    overflow: visible !important;
 }
 
 .edit-auto-trade:hover {
@@ -1370,8 +1382,12 @@ body.path-auto-trades-create .request-error-page-content {
 
 .delete-auto-trade {
     width: 80px; /* Same width as edit button */
+    min-width: 32px !important;
+    min-height: 32px !important;
     outline: none !important; /* Remove blue focus outline */
     border: none !important;
+    flex-shrink: 0 !important;
+    overflow: visible !important;
 }
 
 .delete-auto-trade:focus {
@@ -1384,6 +1400,9 @@ body.path-auto-trades-create .request-error-page-content {
     flex-direction: column; /* Stack vertically instead of side by side */
     gap: 0; /* No gap since we use margin-bottom */
     align-items: center;
+    min-width: 32px;
+    flex-shrink: 0;
+    overflow: visible;
 }
 
 /* Remove blue outline from all buttons in extension */

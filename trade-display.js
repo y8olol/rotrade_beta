@@ -4,12 +4,28 @@
     function displayAutoTrades(autoTrades) {
         const container = document.getElementById('auto-trades-container');
         const emptyState = document.getElementById('empty-state');
+        const autoTradesSection = document.getElementById('auto-trades-section');
 
         if (!container) return;
 
+        const isAutoTradesSectionVisible = autoTradesSection && 
+                                          window.getComputedStyle(autoTradesSection).display !== 'none';
+
         if (autoTrades.length === 0) {
-            container.style.display = 'none';
-            if (emptyState) emptyState.style.display = 'block';
+            container.style.display = 'grid';
+            container.innerHTML = '';
+            if (emptyState && isAutoTradesSectionVisible) {
+                const emptyStateHTML = emptyState.outerHTML;
+                container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;">
+                    <div class="empty-state-icon">🤖</div>
+                    <div class="empty-state-title">No Auto Trades Yet</div>
+                    <div class="empty-state-text">
+                        Create your first automated trade to get started.<br>
+                        Set up trades to run automatically and maximize your trading efficiency.
+                    </div>
+                </div>`;
+            }
+            if (emptyState) emptyState.style.display = 'none';
             return;
         }
 
@@ -94,13 +110,15 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="trade-actions-inline" style="display: flex; flex-direction: column; gap: 6px; align-items: center;">
+                        <div class="trade-actions-inline" style="display: flex; flex-direction: column; gap: 6px; align-items: center; min-width: 32px; flex-shrink: 0;">
                             <button class="edit-auto-trade" data-trade-id="${autoTrade.id}" style="
                                 background: transparent !important;
                                 border: 1px solid #444 !important;
                                 color: #fff !important;
                                 width: 32px !important;
+                                min-width: 32px !important;
                                 height: 32px !important;
+                                min-height: 32px !important;
                                 border-radius: 6px !important;
                                 cursor: pointer !important;
                                 display: inline-flex !important;
@@ -109,13 +127,17 @@
                                 font-size: 14px !important;
                                 padding: 0 !important;
                                 box-shadow: none !important;
+                                flex-shrink: 0 !important;
+                                overflow: visible !important;
                             ">✏️</button>
                             <button class="delete-auto-trade" data-trade-id="${autoTrade.id}" style="
                                 background: transparent !important;
                                 border: 1px solid #444 !important;
                                 color: #fff !important;
                                 width: 32px !important;
+                                min-width: 32px !important;
                                 height: 32px !important;
+                                min-height: 32px !important;
                                 border-radius: 6px !important;
                                 cursor: pointer !important;
                                 display: inline-flex !important;
@@ -124,6 +146,8 @@
                                 font-size: 14px !important;
                                 padding: 0 !important;
                                 box-shadow: none !important;
+                                flex-shrink: 0 !important;
+                                overflow: visible !important;
                             ">🗑️</button>
                         </div>
                     </div>

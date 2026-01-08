@@ -20,10 +20,16 @@
                 document.getElementById('expired-section').style.display = 'none';
                 document.getElementById('countered-section').style.display = 'none';
                 document.getElementById('completed-section').style.display = 'none';
+                
+                // Hide empty state when switching to other sections
+                const emptyState = document.getElementById('empty-state');
+                if (emptyState) {
+                    emptyState.style.display = 'none';
+                }
 
                 if (filter === 'auto-trades') {
                     document.getElementById('auto-trades-section').style.display = 'block';
-                    // Reload auto trades data
+                    // Reload auto trades data - this will handle showing empty state if needed
                     if (window.loadAutoTradeData) {
                         window.loadAutoTradeData();
                     }
