@@ -99,6 +99,7 @@
         }
 
         Storage.set('autoTrades', autoTrades);
+        Storage.flush();
 
         if (isEditMode) {
             window.editingTradeId = undefined;
