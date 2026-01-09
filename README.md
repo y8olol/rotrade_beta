@@ -6,7 +6,7 @@
 
 **Smart Roblox trading made simple. Craft your perfect trade and let our algorithm find the best trading partners automatically.**
 
-[![Version](https://img.shields.io/badge/version-1.1.5-brightgreen)](manifest.json)
+[![Version](https://img.shields.io/badge/version-1.1.6-brightgreen)](manifest.json)
 [![Manifest](https://img.shields.io/badge/manifest-v3-blue)](manifest.json)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-lightgrey)](LICENSE)
 
