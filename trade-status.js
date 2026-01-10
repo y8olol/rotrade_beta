@@ -393,25 +393,35 @@
         const statusMap = new Map();
 
         for (const tradeId of tradeIds) {
-            const result = await Utils.safeFetch(`https://trades.roblox.com/v1/trades/${tradeId}`, {
-                method: 'GET',
-                timeout: 8000,
-                retries: 0
-            });
+            try {
+                const result = await Utils.safeFetch(`https://trades.roblox.com/v1/trades/${tradeId}`, {
+                    method: 'GET',
+                    timeout: 8000,
+                    retries: 1
+                });
 
-            if (result.ok && result.data) {
-                let status = result.data.status;
-                if (result.data.isActive === false && (!status || status === 'Open')) {
-                    status = 'Expired';
+                if (result.ok && result.data) {
+                    let status = result.data.status;
+                    if (result.data.isActive === false) {
+                        if (!status || status === 'Open') {
+                            status = 'Expired';
+                        }
+                    }
+                    if (typeof status === 'string') {
+                        statusMap.set(tradeId, status);
+                    }
+                } else if (result.error) {
+                    if (result.error.message && result.error.message.includes('429')) {
+                        await Utils.delay(2000);
+                        break;
+                    } else if (result.status === 404 || result.status === 403) {
+                        statusMap.set(tradeId, 'Expired');
+                    }
                 }
-                if (typeof status === 'string') {
-                    statusMap.set(tradeId, status);
-                }
-            } else if (result.error && result.error.message && result.error.message.includes('429')) {
-                break;
+            } catch (error) {
             }
             
-            await Utils.delay(1500);
+            await Utils.delay(1000);
         }
 
         return statusMap;
@@ -462,10 +472,20 @@
             }
         });
 
-        if (movedTrades.length > 0) {
-            if (typeof TradeLoading.loadOutboundTrades === 'function') TradeLoading.loadOutboundTrades();
-            if (typeof TradeLoading.loadExpiredTrades === 'function') TradeLoading.loadExpiredTrades();
-            if (typeof TradeLoading.loadCompletedTrades === 'function') TradeLoading.loadCompletedTrades();
+        const activeTab = document.querySelector('.filter-btn.active');
+        const currentFilter = activeTab ? activeTab.getAttribute('data-filter') : null;
+
+        if (typeof TradeLoading.loadOutboundTrades === 'function') {
+            TradeLoading.loadOutboundTrades();
+        }
+        if (typeof TradeLoading.loadExpiredTrades === 'function') {
+            TradeLoading.loadExpiredTrades();
+        }
+        if (typeof TradeLoading.loadCompletedTrades === 'function') {
+            TradeLoading.loadCompletedTrades();
+        }
+        if (typeof TradeLoading.loadCounteredTrades === 'function') {
+            TradeLoading.loadCounteredTrades();
         }
     }
 
@@ -483,25 +503,29 @@
 
         const tradeStatusMap = new Map();
         
-        const allTradesToCheck = Array.from(pendingTradeIds);
-        const MAX_CHECKS = 10;
-        const tradesToCheck = allTradesToCheck.slice(0, MAX_CHECKS);
-        const individualStatusMap = await fetchStatusForChangedTrades(tradesToCheck);
-        individualStatusMap.forEach((status, tradeId) => tradeStatusMap.set(tradeId, status));
+        const tradesNotInList = Array.from(pendingTradeIds).filter(id => !foundInPaginatedList.has(id));
+        
+        if (tradesNotInList.length > 0) {
+            const missingStatusMap = await fetchStatusForChangedTrades(tradesNotInList);
+            missingStatusMap.forEach((status, tradeId) => tradeStatusMap.set(tradeId, status));
+        }
 
         for (const tradeId of pendingTradeIds) {
             if (!tradeStatusMap.has(tradeId)) {
                 if (foundInPaginatedList.has(tradeId)) {
                     tradeStatusMap.set(tradeId, 'Open');
+                } else {
+                    tradeStatusMap.set(tradeId, 'Expired');
                 }
             }
         }
 
         const { stillPending, finalizedTrades, movedTrades } = processStatusUpdates(pendingTrades, tradeStatusMap);
 
-        if (movedTrades.length > 0) {
-            Storage.set('pendingExtensionTrades', stillPending);
-            Storage.set('finalizedExtensionTrades', finalizedTrades);
+        Storage.set('pendingExtensionTrades', stillPending);
+        Storage.set('finalizedExtensionTrades', finalizedTrades);
+        
+        if (movedTrades.length > 0 || stillPending.length !== pendingTrades.length) {
             notifyAndRefreshUI(movedTrades);
         }
 
