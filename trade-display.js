@@ -564,8 +564,15 @@
         if (Object.keys(rolimonData).length > 0) {
             tradesToShow = tradesToShow.map(opportunity => {
                 const enrichedGiving = opportunity.giving.map(item => {
-                    const itemName = item.name;
-                    const rolimonEntry = Object.entries(rolimonData).find(([id, data]) => data && Array.isArray(data) && data[0] === itemName);
+                    const itemName = (item.name || '').trim();
+                    if (!itemName) return item;
+                    
+                    const rolimonEntry = Object.entries(rolimonData).find(([id, data]) => {
+                        if (!Array.isArray(data) || data.length < 5) return false;
+                        const rolimonName = (data[0] || '').trim();
+                        return rolimonName.toLowerCase() === itemName.toLowerCase();
+                    });
+                    
                     if (rolimonEntry) {
                         const [itemId, rolimonItem] = rolimonEntry;
                         return {
@@ -580,8 +587,15 @@
                 });
 
                 const enrichedReceiving = opportunity.receiving.map(item => {
-                    const itemName = item.name;
-                    const rolimonEntry = Object.entries(rolimonData).find(([id, data]) => data && Array.isArray(data) && data[0] === itemName);
+                    const itemName = (item.name || '').trim();
+                    if (!itemName) return item;
+                    
+                    const rolimonEntry = Object.entries(rolimonData).find(([id, data]) => {
+                        if (!Array.isArray(data) || data.length < 5) return false;
+                        const rolimonName = (data[0] || '').trim();
+                        return rolimonName.toLowerCase() === itemName.toLowerCase();
+                    });
+                    
                     if (rolimonEntry) {
                         const [itemId, rolimonItem] = rolimonEntry;
                         return {

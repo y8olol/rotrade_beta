@@ -399,8 +399,14 @@
                 retries: 0
             });
 
-            if (result.ok && result.data && typeof result.data.status === 'string') {
-                statusMap.set(tradeId, result.data.status);
+            if (result.ok && result.data) {
+                let status = result.data.status;
+                if (result.data.isActive === false && (!status || status === 'Open')) {
+                    status = 'Expired';
+                }
+                if (typeof status === 'string') {
+                    statusMap.set(tradeId, status);
+                }
             } else if (result.error && result.error.message && result.error.message.includes('429')) {
                 break;
             }
@@ -475,16 +481,20 @@
 
         const foundInPaginatedList = await findPendingTradesInPaginatedList(pendingTradeIds, oldestPendingTime);
 
-        const tradesToCheckIndividually = Array.from(pendingTradeIds).filter(id => !foundInPaginatedList.has(id));
-        
         const tradeStatusMap = new Map();
-        foundInPaginatedList.forEach(tradeId => tradeStatusMap.set(tradeId, 'Open'));
+        
+        const allTradesToCheck = Array.from(pendingTradeIds);
+        const MAX_CHECKS = 10;
+        const tradesToCheck = allTradesToCheck.slice(0, MAX_CHECKS);
+        const individualStatusMap = await fetchStatusForChangedTrades(tradesToCheck);
+        individualStatusMap.forEach((status, tradeId) => tradeStatusMap.set(tradeId, status));
 
-        if (tradesToCheckIndividually.length > 0) {
-            const MAX_INDIVIDUAL_CHECKS = 5;
-            const tradesToCheck = tradesToCheckIndividually.slice(0, MAX_INDIVIDUAL_CHECKS);
-            const individualStatusMap = await fetchStatusForChangedTrades(tradesToCheck);
-            individualStatusMap.forEach((status, tradeId) => tradeStatusMap.set(tradeId, status));
+        for (const tradeId of pendingTradeIds) {
+            if (!tradeStatusMap.has(tradeId)) {
+                if (foundInPaginatedList.has(tradeId)) {
+                    tradeStatusMap.set(tradeId, 'Open');
+                }
+            }
         }
 
         const { stillPending, finalizedTrades, movedTrades } = processStatusUpdates(pendingTrades, tradeStatusMap);

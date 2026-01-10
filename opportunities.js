@@ -42,20 +42,28 @@
     }
 
     async function getItemIdsFromTrade(items, rolimonData) {
-        let itemIds = items.map(item => item.id).filter(id => id);
-
-        if (itemIds.length === 0 && Object.keys(rolimonData).length > 0) {
-            items.forEach(item => {
-                const rolimonEntry = Object.entries(rolimonData).find(([id, data]) =>
-                    data[0] === item.name
-                );
+        let itemIds = [];
+        
+        items.forEach(item => {
+            let itemId = item.id || item.itemId;
+            
+            if (!itemId && item.name && Object.keys(rolimonData).length > 0) {
+                const itemName = (item.name || '').trim();
+                const rolimonEntry = Object.entries(rolimonData).find(([id, data]) => {
+                    if (!Array.isArray(data) || data.length < 5) return false;
+                    const rolimonName = (data[0] || '').trim();
+                    return rolimonName.toLowerCase() === itemName.toLowerCase();
+                });
 
                 if (rolimonEntry) {
-                    const itemId = parseInt(rolimonEntry[0]);
-                    itemIds.push(itemId);
+                    itemId = parseInt(rolimonEntry[0]);
                 }
-            });
-        }
+            }
+            
+            if (itemId && !isNaN(itemId) && itemId > 0) {
+                itemIds.push(itemId);
+            }
+        });
 
         return itemIds.sort((a, b) => a - b);
     }
@@ -436,28 +444,50 @@
 
         const updatedAutoTrades = autoTrades.map(trade => {
             const updatedGiving = trade.giving.map(item => {
-                const itemName = item.name;
-                const rolimonItem = Object.values(rolimonData).find(r => r[0] === itemName);
+                const itemName = (item.name || '').trim();
+                if (!itemName) return item;
+                
+                const rolimonItem = Object.values(rolimonData).find(r => {
+                    if (!Array.isArray(r) || r.length < 5) return false;
+                    const rolimonName = (r[0] || '').trim();
+                    return rolimonName.toLowerCase() === itemName.toLowerCase();
+                });
 
                 if (rolimonItem) {
+                    const rolimonEntry = Object.entries(rolimonData).find(([id, data]) => data === rolimonItem);
+                    const itemId = rolimonEntry ? parseInt(rolimonEntry[0]) : null;
+                    
                     return {
                         ...item,
-                        rap: rolimonItem[2],
-                        value: rolimonItem[4]
+                        id: itemId || item.id || item.itemId,
+                        itemId: itemId || item.id || item.itemId,
+                        rap: item.rap || rolimonItem[2],
+                        value: item.value || rolimonItem[4]
                     };
                 }
                 return item;
             });
 
             const updatedReceiving = trade.receiving.map(item => {
-                const itemName = item.name;
-                const rolimonItem = Object.values(rolimonData).find(r => r[0] === itemName);
+                const itemName = (item.name || '').trim();
+                if (!itemName) return item;
+                
+                const rolimonItem = Object.values(rolimonData).find(r => {
+                    if (!Array.isArray(r) || r.length < 5) return false;
+                    const rolimonName = (r[0] || '').trim();
+                    return rolimonName.toLowerCase() === itemName.toLowerCase();
+                });
 
                 if (rolimonItem) {
+                    const rolimonEntry = Object.entries(rolimonData).find(([id, data]) => data === rolimonItem);
+                    const itemId = rolimonEntry ? parseInt(rolimonEntry[0]) : null;
+                    
                     return {
                         ...item,
-                        rap: rolimonItem[2],
-                        value: rolimonItem[4]
+                        id: itemId || item.id || item.itemId,
+                        itemId: itemId || item.id || item.itemId,
+                        rap: item.rap || rolimonItem[2],
+                        value: item.value || rolimonItem[4]
                     };
                 }
                 return item;
@@ -476,20 +506,28 @@
 
         for (const trade of updatedAutoTrades) {
             try {
-                let itemIds = trade.receiving.map(item => item.id).filter(id => id);
-
-                if (itemIds.length === 0 && Object.keys(rolimonData).length > 0) {
-                    trade.receiving.forEach(item => {
-                        const rolimonEntry = Object.entries(rolimonData).find(([id, data]) =>
-                            data[0] === item.name
-                        );
+                let itemIds = [];
+                
+                trade.receiving.forEach(item => {
+                    let itemId = item.id || item.itemId;
+                    
+                    if (!itemId && item.name && Object.keys(rolimonData).length > 0) {
+                        const itemName = (item.name || '').trim();
+                        const rolimonEntry = Object.entries(rolimonData).find(([id, data]) => {
+                            if (!Array.isArray(data) || data.length < 5) return false;
+                            const rolimonName = (data[0] || '').trim();
+                            return rolimonName.toLowerCase() === itemName.toLowerCase();
+                        });
 
                         if (rolimonEntry) {
-                            const itemId = parseInt(rolimonEntry[0]);
-                            itemIds.push(itemId);
+                            itemId = parseInt(rolimonEntry[0]);
                         }
-                    });
-                }
+                    }
+                    
+                    if (itemId && !isNaN(itemId) && itemId > 0) {
+                        itemIds.push(itemId);
+                    }
+                });
 
                 if (itemIds.length === 0) {
                     continue;

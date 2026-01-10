@@ -141,16 +141,26 @@
                         throw new Error('Could not get current user ID');
                     }
 
+                    const ourItemIds = await Opportunities.getItemIdsFromTrade(opportunity.giving, window.rolimonData || {});
+                    const theirItemIds = await Opportunities.getItemIdsFromTrade(opportunity.receiving, window.rolimonData || {});
+
+                    if (ourItemIds.length !== opportunity.giving.length) {
+                        throw new Error(`Missing item IDs for giving items. Expected ${opportunity.giving.length}, got ${ourItemIds.length}`);
+                    }
+                    if (theirItemIds.length !== opportunity.receiving.length) {
+                        throw new Error(`Missing item IDs for receiving items. Expected ${opportunity.receiving.length}, got ${theirItemIds.length}`);
+                    }
+
                     const tradePayload = {
                         trade: [
                             {
                                 user_id: currentUserId,
-                                item_ids: await Opportunities.getItemIdsFromTrade(opportunity.giving, window.rolimonData || {}),
+                                item_ids: ourItemIds,
                                 robux: opportunity.giving.reduce((sum, item) => sum + (item.robux || 0), 0)
                             },
                             {
                                 user_id: userId,
-                                item_ids: await Opportunities.getItemIdsFromTrade(opportunity.receiving, window.rolimonData || {}),
+                                item_ids: theirItemIds,
                                 robux: opportunity.receiving.reduce((sum, item) => sum + (item.robux || 0), 0)
                             }
                         ]
@@ -164,17 +174,25 @@
                     if (instanceResponse.success && instanceResponse.data.trade) {
                         const tradeData = instanceResponse.data.trade;
 
+                        const currentUserId = await Inventory.getCurrentUserId();
+
+                        const ourTradeData = tradeData.find(t => t.user_id === currentUserId);
+                        const theirTradeData = tradeData.find(t => t.user_id === userId);
+
+                        const ourInstanceIds = (ourTradeData?.item_instance_ids || []).slice(0, ourItemIds.length);
+                        const theirInstanceIds = (theirTradeData?.item_instance_ids || []).slice(0, theirItemIds.length);
+
+                        if (ourInstanceIds.length !== ourItemIds.length) {
+                            throw new Error(`Missing instance IDs for giving items. Expected ${ourItemIds.length}, got ${ourInstanceIds.length}`);
+                        }
+                        if (theirInstanceIds.length !== theirItemIds.length) {
+                            throw new Error(`Missing instance IDs for receiving items. Expected ${theirItemIds.length}, got ${theirInstanceIds.length}`);
+                        }
+
                         btn.textContent = 'SENDING TRADE...';
                         btn.style.background = '#17a2b8';
 
                         try {
-                            const currentUserId = await Inventory.getCurrentUserId();
-
-                            const ourTradeData = tradeData.find(t => t.user_id === currentUserId);
-                            const theirTradeData = tradeData.find(t => t.user_id === userId);
-
-                            const ourInstanceIds = (ourTradeData?.item_instance_ids || []).slice(0, opportunity.giving.length);
-                            const theirInstanceIds = (theirTradeData?.item_instance_ids || []).slice(0, opportunity.receiving.length);
 
                             const angularTradeData = {
                                 senderOffer: {

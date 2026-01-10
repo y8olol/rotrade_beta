@@ -20,7 +20,18 @@
 
     function enrichItemWithRolimons(item, nameIndex) {
         if (!item.name) return item;
-        const rolimonEntry = nameIndex.get(item.name);
+        const itemName = (item.name || '').trim();
+        
+        let rolimonEntry = nameIndex.get(itemName);
+        if (!rolimonEntry && itemName) {
+            for (const [key, value] of nameIndex.entries()) {
+                if (key && typeof key === 'string' && key.trim().toLowerCase() === itemName.toLowerCase()) {
+                    rolimonEntry = value;
+                    break;
+                }
+            }
+        }
+        
         if (!rolimonEntry) return item;
         
         const { id: itemId, data: rolimonItem } = rolimonEntry;
@@ -241,7 +252,8 @@
         const expiredTrades = finalizedTrades
             .filter(trade => {
                 const status = (trade.status || '').toLowerCase();
-                return status === 'expired' || status === 'declined';
+                const robloxStatus = (trade.robloxStatus || '').toLowerCase();
+                return status === 'expired' || status === 'declined' || robloxStatus === 'expired';
             })
             .map(trade => {
                 let giving = Array.isArray(trade.giving) ? trade.giving : [];
