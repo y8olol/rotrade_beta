@@ -341,7 +341,7 @@
         return { data: [], nextPageCursor: null, previousPageCursor: null };
     }
 
-    async function findPendingTradesInPaginatedList(pendingTradeIds) {
+    async function findPendingTradesInPaginatedList(pendingTradeIds, oldestPendingTime = 0) {
         const foundTradeIds = new Set();
         let cursor = null;
         let pagesChecked = 0;
@@ -352,9 +352,19 @@
             
             if (!pageData?.data?.length) break;
 
+            let foundOlderTrade = false;
+
             for (const tradeData of pageData.data) {
                 if (!tradeData || tradeData.id === undefined || tradeData.id === null) {
                     continue;
+                }
+                
+                if (oldestPendingTime > 0 && tradeData.created) {
+                    const tradeCreatedTime = new Date(tradeData.created).getTime();
+                    if (tradeCreatedTime < oldestPendingTime) {
+                        foundOlderTrade = true;
+                        continue;
+                    }
                 }
                 
                 const tradeIdFromApi = String(tradeData.id).trim();
@@ -368,7 +378,7 @@
                 }
             }
 
-            if (!pageData.nextPageCursor) break;
+            if (foundOlderTrade || !pageData.nextPageCursor) break;
 
             cursor = pageData.nextPageCursor;
             pagesChecked++;
@@ -507,8 +517,9 @@
         }
 
         const pendingTradeIds = new Set(pendingTrades.map(t => String(t.id).trim()));
+        const oldestPendingTime = getOldestPendingTradeTime(pendingTrades);
 
-        const foundInPaginatedList = await findPendingTradesInPaginatedList(pendingTradeIds);
+        const foundInPaginatedList = await findPendingTradesInPaginatedList(pendingTradeIds, oldestPendingTime);
 
         const tradeStatusMap = new Map();
         
