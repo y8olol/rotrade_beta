@@ -305,19 +305,6 @@
         }, UPDATE_INTERVAL);
     }
 
-    const STATUS_MAPPING = {
-        "Open": "outbound",
-        "Declined": "declined",
-        "Accepted": "accepted",
-        "Expired": "declined",
-        "Completed": "completed",
-        "Countered": "countered"
-    };
-
-    function mapRobloxStatusToInternal(robloxStatus) {
-        return STATUS_MAPPING[robloxStatus] || 'unknown';
-    }
-
     function getOldestPendingTradeTime(pendingTrades) {
         if (pendingTrades.length === 0) return 0;
         
@@ -354,9 +341,9 @@
         return { data: [], nextPageCursor: null, previousPageCursor: null };
     }
 
-    async function findPendingTradesInPaginatedList(pendingTradeIds, oldestPendingTime) {
+    async function findPendingTradesInPaginatedList(pendingTradeIds) {
         const foundTradeIds = new Set();
-        let cursor = '';
+        let cursor = null;
         let pagesChecked = 0;
         const MAX_PAGES = 50;
 
@@ -365,22 +352,23 @@
             
             if (!pageData?.data?.length) break;
 
-            let shouldStop = false;
             for (const tradeData of pageData.data) {
-                const tradeId = String(tradeData.id);
-                const tradeCreatedTime = new Date(tradeData.created).getTime();
-                
-                if (pendingTradeIds.has(tradeId)) {
-                    foundTradeIds.add(tradeId);
+                if (!tradeData || tradeData.id === undefined || tradeData.id === null) {
+                    continue;
                 }
                 
-                if (tradeCreatedTime < oldestPendingTime) {
-                    shouldStop = true;
-                    break;
+                const tradeIdFromApi = String(tradeData.id).trim();
+                
+                for (const pendingId of pendingTradeIds) {
+                    const pendingIdStr = String(pendingId).trim();
+                    if (pendingIdStr === tradeIdFromApi) {
+                        foundTradeIds.add(tradeIdFromApi);
+                        foundTradeIds.add(pendingIdStr);
+                    }
                 }
             }
 
-            if (shouldStop || !pageData.nextPageCursor) break;
+            if (!pageData.nextPageCursor) break;
 
             cursor = pageData.nextPageCursor;
             pagesChecked++;
@@ -389,33 +377,55 @@
         return foundTradeIds;
     }
 
-    async function fetchStatusForChangedTrades(tradeIds) {
+    async function fetchStatusForChangedTrades(tradeIds, foundInPaginatedList = new Set()) {
         const statusMap = new Map();
 
         for (const tradeId of tradeIds) {
+            const tradeIdStr = String(tradeId).trim();
+            
+            if (foundInPaginatedList.has(tradeIdStr)) {
+                continue;
+            }
+            
+            let isInPaginatedList = false;
+            for (const foundId of foundInPaginatedList) {
+                const foundIdStr = String(foundId).trim();
+                if (foundIdStr === tradeIdStr) {
+                    isInPaginatedList = true;
+                    break;
+                }
+            }
+            
+            if (isInPaginatedList) {
+                continue;
+            }
+            
             try {
-                const result = await Utils.safeFetch(`https://trades.roblox.com/v1/trades/${tradeId}`, {
+                const result = await Utils.safeFetch(`https://trades.roblox.com/v1/trades/${tradeIdStr}`, {
                     method: 'GET',
                     timeout: 8000,
                     retries: 1
                 });
 
                 if (result.ok && result.data) {
-                    let status = result.data.status;
-                    if (result.data.isActive === false) {
-                        if (!status || status === 'Open') {
-                            status = 'Expired';
+                    const tradeData = result.data.data || result.data;
+                    let status = tradeData.status;
+                    const isActive = tradeData.isActive;
+                    
+                    if (typeof status === 'string' && status && status.trim()) {
+                        const normalizedStatus = status.trim().toLowerCase();
+                        if (normalizedStatus === 'open' && isActive === false) {
+                            statusMap.set(tradeIdStr, 'declined');
+                        } else if (normalizedStatus === 'completed' || normalizedStatus === 'declined' || normalizedStatus === 'countered' || normalizedStatus === 'open') {
+                            statusMap.set(tradeIdStr, normalizedStatus);
                         }
-                    }
-                    if (typeof status === 'string') {
-                        statusMap.set(tradeId, status);
+                    } else if (isActive === false) {
+                        statusMap.set(tradeIdStr, 'declined');
                     }
                 } else if (result.error) {
                     if (result.error.message && result.error.message.includes('429')) {
                         await Utils.delay(2000);
                         break;
-                    } else if (result.status === 404 || result.status === 403) {
-                        statusMap.set(tradeId, 'Expired');
                     }
                 }
             } catch (error) {
@@ -433,7 +443,7 @@
         const movedTrades = [];
 
         for (const trade of pendingTrades) {
-            const tradeId = String(trade.id);
+            const tradeId = String(trade.id).trim();
             const robloxStatus = tradeStatusMap.get(tradeId);
             
             if (!robloxStatus) {
@@ -441,14 +451,14 @@
                 continue;
             }
 
-            const mappedStatus = mapRobloxStatusToInternal(robloxStatus);
+            const normalizedStatus = robloxStatus.trim().toLowerCase();
             
-            if (mappedStatus === 'outbound') {
+            if (normalizedStatus === 'open') {
                 stillPending.push(trade);
             } else {
                 const finalizedTrade = {
                     ...trade,
-                    status: mappedStatus,
+                    status: normalizedStatus,
                     finalizedAt: Date.now(),
                     robloxStatus: robloxStatus,
                     giving: Array.isArray(trade.giving) ? trade.giving : [],
@@ -496,26 +506,89 @@
             return 0;
         }
 
-        const pendingTradeIds = new Set(pendingTrades.map(t => String(t.id)));
-        const oldestPendingTime = getOldestPendingTradeTime(pendingTrades);
+        const pendingTradeIds = new Set(pendingTrades.map(t => String(t.id).trim()));
 
-        const foundInPaginatedList = await findPendingTradesInPaginatedList(pendingTradeIds, oldestPendingTime);
+        const foundInPaginatedList = await findPendingTradesInPaginatedList(pendingTradeIds);
 
         const tradeStatusMap = new Map();
         
-        const tradesNotInList = Array.from(pendingTradeIds).filter(id => !foundInPaginatedList.has(id));
-        
-        if (tradesNotInList.length > 0) {
-            const missingStatusMap = await fetchStatusForChangedTrades(tradesNotInList);
-            missingStatusMap.forEach((status, tradeId) => tradeStatusMap.set(tradeId, status));
+        for (const tradeId of pendingTradeIds) {
+            const tradeIdStr = String(tradeId).trim();
+            
+            let isInList = foundInPaginatedList.has(tradeIdStr);
+            if (!isInList) {
+                for (const foundId of foundInPaginatedList) {
+                    if (String(foundId).trim() === tradeIdStr) {
+                        isInList = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (isInList) {
+                tradeStatusMap.set(tradeIdStr, 'open');
+            }
         }
 
-        for (const tradeId of pendingTradeIds) {
-            if (!tradeStatusMap.has(tradeId)) {
-                if (foundInPaginatedList.has(tradeId)) {
-                    tradeStatusMap.set(tradeId, 'Open');
-                } else {
-                    tradeStatusMap.set(tradeId, 'Expired');
+        const tradesToCheckIndividually = [];
+        for (const trade of pendingTrades) {
+            const tradeIdStr = String(trade.id).trim();
+            
+            let foundInList = false;
+            for (const foundId of foundInPaginatedList) {
+                if (String(foundId).trim() === tradeIdStr) {
+                    foundInList = true;
+                    break;
+                }
+            }
+            
+            if (foundInList || foundInPaginatedList.has(tradeIdStr) || tradeStatusMap.has(tradeIdStr)) {
+                continue;
+            }
+            
+            tradesToCheckIndividually.push({
+                id: tradeIdStr,
+                created: trade.created || trade.createdAt || Date.now()
+            });
+        }
+        
+        tradesToCheckIndividually.sort((a, b) => (a.created || 0) - (b.created || 0));
+        
+        if (tradesToCheckIndividually.length > 0) {
+            const tradesToActuallyCheck = [];
+            for (const tradeInfo of tradesToCheckIndividually) {
+                const tradeIdStr = tradeInfo.id;
+                
+                let isInList = false;
+                for (const foundId of foundInPaginatedList) {
+                    if (String(foundId).trim() === tradeIdStr) {
+                        isInList = true;
+                        break;
+                    }
+                }
+                
+                if (!isInList && !foundInPaginatedList.has(tradeIdStr)) {
+                    tradesToActuallyCheck.push(tradeIdStr);
+                }
+            }
+            
+            if (tradesToActuallyCheck.length > 0) {
+                const individualStatusMap = await fetchStatusForChangedTrades(tradesToActuallyCheck, foundInPaginatedList);
+                for (const tradeIdStr of tradesToActuallyCheck) {
+                    const status = individualStatusMap.get(tradeIdStr);
+                    if (status && status.trim()) {
+                        const normalizedStatus = status.trim().toLowerCase();
+                        let isInList = false;
+                        for (const foundId of foundInPaginatedList) {
+                            if (String(foundId).trim() === tradeIdStr) {
+                                isInList = true;
+                                break;
+                            }
+                        }
+                        if (!isInList && !foundInPaginatedList.has(tradeIdStr)) {
+                            tradeStatusMap.set(tradeIdStr, normalizedStatus);
+                        }
+                    }
                 }
             }
         }
