@@ -2,11 +2,9 @@
 
 <div align="center">
 
-![RoTrade Logo](icon.png)
-
 **Smart Roblox trading made simple. Craft your perfect trade and let our algorithm find the best trading partners automatically.**
 
-[![Version](https://img.shields.io/badge/version-1.1.7-brightgreen)](manifest.json)
+[![Version](https://img.shields.io/badge/version-1.2.8-brightgreen)](manifest.json)
 [![Manifest](https://img.shields.io/badge/manifest-v3-blue)](manifest.json)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-lightgrey)](LICENSE)
 
@@ -79,42 +77,130 @@ The extension popup provides quick access to:
 - `trades.roblox.com/*`: Trading interface
 
 ### Files Structure
+
+
 ```
-roblox-trading-extension/
-├── manifest.json          # Extension configuration
-├── popup.html             # Extension popup interface
-├── popup.js               # Popup functionality
-├── popup.css              # Popup styling
-├── content.js             # Main trading logic
-├── background.js          # Background service worker
-├── bridge.js              # Angular integration
-├── bridge-utils.js        # Bridge utility functions
-├── styles.css             # Injected styles
-├── icon.png               # Extension icon
-├── notification.mp3       # Notification sound
-├── auto-trades.html       # Auto-trades dashboard
-├── create-auto-trade.html # Trade creation interface
-├── utils.js               # Utility functions
-├── storage.js             # Local storage management
-├── dom.js                 # DOM manipulation utilities
-├── thumbnails.js          # Thumbnail handling
-├── api.js                 # API communication
-├── routing.js             # Page routing
-├── trades.js              # Trade management
-├── ui.js                  # UI components
-├── pagination.js          # Pagination logic
-├── inventory.js           # Inventory management
-├── trade-display.js       # Trade display logic
-├── trade-operations.js    # Trade operations
-├── trade-summary.js       # Trade summary
-├── user-stats.js          # User statistics
-├── pages.js               # Page management
-├── event-listeners.js     # Event handling
-├── trade-loading.js       # Trade loading states
-├── opportunities.js       # Trade opportunities
-├── trade-sending.js       # Trade sending logic
-├── trade-status.js        # Trade status tracking
-└── dialogs.js             # Dialog management
+rotrade/
+├── manifest.json           # Extension configuration
+├── LICENSE                 # License file
+├── README.md               # This file
+│
+├── assets/                 # Static assets
+│   ├── bridge.js           # Angular integration bridge
+│   ├── icon.png            # Extension icon
+│   ├── notification.mp3    # Notification sound
+│   └── styles.css          # Global styles
+│
+├── background/             # Service worker & handlers
+│   ├── background.js       # Main service worker entry
+│   ├── cache.js            # Cache definitions
+│   └── handlers/           # API request handlers
+│       ├── common-owners.js
+│       ├── player-assets.js
+│       ├── proofs.js
+│       ├── rolimons.js
+│       ├── thumbnails.js
+│       ├── trade.js
+│       └── user.js
+│
+├── content/                # Content script modules
+│   ├── init.js             # Initialization logic
+│   ├── filters.js          # Trade filtering
+│   ├── global-exports.js   # Global function exports
+│   ├── item-selectors.js   # Item selection handling
+│   ├── margins.js          # Container margin management
+│   ├── migration.js        # Data migration utilities
+│   ├── pagination-wrappers.js
+│   ├── responsive.js       # Responsive layout handling
+│   ├── robux-validation.js
+│   ├── routing-wrappers.js
+│   ├── send-trades-listeners.js
+│   ├── styles.js           # Style injection
+│   ├── trade-editor.js     # Trade editing logic
+│   └── trade-history.js    # Trade history management
+│
+├── core/                   # Core utilities
+│   ├── api.js              # API communication
+│   ├── bridge-utils.js     # Bridge utility functions
+│   ├── dom.js              # DOM manipulation utilities
+│   ├── storage.js          # Local storage management
+│   ├── utils.js            # Main utils wrapper
+│   └── utils/              # Utility modules
+│       ├── cache.js        # Caching utilities
+│       ├── logger.js       # Logging utilities
+│       ├── network.js      # Network request utilities
+│       ├── retry.js        # Retry logic utilities
+│       ├── timing.js       # Timing utilities (debounce, throttle)
+│       └── validation.js   # Data validation utilities
+│
+├── proofs/                 # Proofs link functionality
+│   ├── proofs-link.js      # Main proofs link module
+│   ├── proofs-link-config.js
+│   ├── proofs-link-dom.js
+│   ├── proofs-link-extractor.js
+│   └── proofs-link-validation.js
+│
+├── trading/                # Trading functionality
+│   ├── inventory.js        # Inventory management
+│   ├── trades.js           # Trade management
+│   ├── trade-display.js    # Trade display wrapper
+│   ├── trade-loading.js    # Trade loading wrapper
+│   ├── trade-operations.js # Trade operations
+│   ├── trade-sending.js    # Trade sending logic
+│   ├── trade-status.js     # Trade status wrapper
+│   ├── trade-summary.js    # Trade summary calculations
+│   ├── opportunities.js    # Opportunities wrapper
+│   ├── display/            # Display modules
+│   │   ├── actions.js      # Auto-trade actions
+│   │   ├── auto-trades.js  # Auto-trades display
+│   │   ├── opportunities.js # Opportunities display
+│   │   └── trades.js       # Trades display
+│   ├── loading/            # Loading modules
+│   │   ├── auto-trades.js
+│   │   ├── finalized.js
+│   │   ├── outbound.js
+│   │   ├── thumbnails.js
+│   │   └── utils.js
+│   ├── opportunities/      # Opportunities modules
+│   │   ├── filtering.js
+│   │   ├── items.js
+│   │   ├── loader.js
+│   │   ├── shuffle.js
+│   │   ├── sorting.js
+│   │   └── users.js
+│   └── status/             # Status monitoring modules
+│       ├── checker.js
+│       ├── cleanup.js
+│       ├── fetcher.js
+│       ├── monitoring.js
+│       ├── notifications.js
+│       ├── roblox.js
+│       └── trades.js
+│
+└── ui/                     # UI components
+    ├── dialogs.js          # Dialog management
+    ├── event-listeners.js  # Event listeners wrapper
+    ├── pagination.js       # Pagination logic
+    ├── popup.html          # Extension popup HTML
+    ├── popup.js            # Popup functionality
+    ├── popup.css           # Popup styling
+    ├── routing.js          # Page routing
+    ├── thumbnails.js       # Thumbnail handling
+    ├── ui.js               # UI utilities
+    ├── user-stats.js       # User statistics
+    ├── pages.js            # Pages wrapper
+    ├── listeners/          # Event listener modules
+    │   ├── auto-trades.js
+    │   ├── create-trade.js
+    │   ├── send-trades.js
+    │   └── settings.js
+    └── pages/              # Page modules
+        ├── auto-trades.js
+        ├── create-trade.js
+        ├── proofs.js
+        ├── send-trades.js
+        ├── settings.js
+        └── utils.js
 ```
 
 ---
@@ -135,7 +221,7 @@ RoTrade features a modern, dark-themed interface that integrates seamlessly with
 <tr>
 <td align="center">
 <strong>Frontend Developer</strong><br>
-<code>y8o, xolo</code><br>
+<code>xolo</code><br>
 <em>Extension Development</em>
 </td>
 <td align="center">
@@ -169,6 +255,6 @@ This project is licensed under the Creative Commons Attribution-NonCommercial 4.
 
 **Made with ❤️ for the Roblox trading community**
 
-*RoTrade v1.1.7 - Smart Roblox Trading Made Simple*
+*RoTrade v1.2.8 - Smart Roblox Trading Made Simple*
 
 </div>
