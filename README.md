@@ -221,7 +221,7 @@ RoTrade features a modern, dark-themed interface that integrates seamlessly with
 <tr>
 <td align="center">
 <strong>Frontend Developer</strong><br>
-<code>xolo</code><br>
+<code>y8o, xolo</code><br>
 <em>Extension Development</em>
 </td>
 <td align="center">
